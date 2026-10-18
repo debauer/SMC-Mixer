@@ -189,7 +189,8 @@ async function start() {
     renderAll();
   });
   updateStrips = strips.update;
-  updateKnobs = createKnobs(strips.knobHosts, (n) => {
+  const knobHosts = Array.from({ length: 8 }, () => $("knobs").appendChild(el("div", { class: "channel-knob" })));
+  updateKnobs = createKnobs(knobHosts, (n) => {
     model.selected = { kind: "knob", id: n };
     renderAll();
   });

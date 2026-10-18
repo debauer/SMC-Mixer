@@ -62,6 +62,7 @@ h2.label.source { color: var(--source); }
 
 .channel { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: #090a0f; }
 .channel-knob { display: flex; }
+.knob-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
 .knob { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: #0d0f16; }
 .knob:hover { border-color: #3a4058; }
 .dial { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line-strong); border-radius: 50%; background: #12141d; color: var(--muted); font-size: 14px; }
@@ -148,7 +149,7 @@ input[type="text"], select { padding: 9px 11px; border: 1px solid var(--line-str
 @media (max-width: 720px) {
   .top, .layout { padding-inline: 16px; }
   .banner { margin-inline: 16px; }
-  .strips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .strips, .knob-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .actions-grid { grid-template-columns: 1fr; }
   .editor { max-width: none; flex-basis: 100%; }
 }
