@@ -25,6 +25,7 @@ PAGES = {
     "/button_editor.js": ("button_editor.js", "text/javascript; charset=utf-8"),
     "/knobs.js": ("knobs.js", "text/javascript; charset=utf-8"),
     "/knob_editor.js": ("knob_editor.js", "text/javascript; charset=utf-8"),
+    "/mqtt_editor.js": ("mqtt_editor.js", "text/javascript; charset=utf-8"),
     "/strips.js": ("strips.js", "text/javascript; charset=utf-8"),
     "/editor.js": ("editor.js", "text/javascript; charset=utf-8"),
 }

@@ -8,6 +8,7 @@ from typing import Any
 
 from smc_mixer_daemon.buttons import Binding, BindingError, parse_binding, strip_buttons
 from smc_mixer_daemon.knobs import KnobBinding, KnobBindingError, parse_knob
+from smc_mixer_daemon.mqtt_config import MqttConfig, MqttConfigError, parse_mqtt
 
 MAX_LABEL = 40
 
@@ -39,6 +40,7 @@ class Config:
     web: WebConfig = field(default_factory=WebConfig)
     buttons: tuple[Binding, ...] = ()
     knobs: tuple[KnobBinding, ...] = ()
+    mqtt: MqttConfig = field(default_factory=MqttConfig)
 
 
 def default_path() -> Path:
@@ -83,7 +85,7 @@ def parse_web(value: Any) -> WebConfig:
 
 
 def parse(raw: dict[str, Any]) -> Config:
-    table(raw, {"daemon", "media", "strips", "web", "buttons", "knobs"}, "configuration")
+    table(raw, {"daemon", "media", "strips", "web", "buttons", "knobs", "mqtt"}, "configuration")
     daemon = table(raw.get("daemon", {}), {"soft_takeover"}, "daemon")
     soft = daemon.get("soft_takeover", False)
     if type(soft) is not bool:
@@ -121,7 +123,11 @@ def parse(raw: dict[str, Any]) -> Config:
     if not strips and player is None and not buttons and not knobs:
         raise ConfigError("configure at least one strip, button, knob or media player")
     web = parse_web(raw["web"]) if "web" in raw else WebConfig()
-    return Config(tuple(strips), soft, player, web, buttons, knobs)
+    try:
+        mqtt = parse_mqtt(raw["mqtt"]) if "mqtt" in raw else MqttConfig()
+    except MqttConfigError as exc:
+        raise ConfigError(str(exc)) from exc
+    return Config(tuple(strips), soft, player, web, buttons, knobs, mqtt)
 
 
 def parse_buttons(entries: Any, strips: list[Strip]) -> tuple[Binding, ...]:

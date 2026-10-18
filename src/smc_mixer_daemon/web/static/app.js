@@ -12,6 +12,7 @@ const model = {
   devices: { devices: [], players: [], player_error: null },
   selected: { kind: "strip", id: 1 },
   offline: false,
+  mqtt: { enabled: false, prefix: "smc" },
   token: "",
   tokenFile: null,
 };
@@ -42,6 +43,7 @@ async function request(path, options) {
 const fromConfig = (config) => ({
   soft_takeover: config.soft_takeover,
   player: config.player,
+  mqtt_ignore: config.mqtt_ignore,
   strips: Array.from({ length: 8 }, (_, i) => {
     const row = config.strips.find((strip) => strip.channel === i + 1);
     return row ? { kind: row.kind, name: row.name, label: row.label || "" } : null;
@@ -58,6 +60,7 @@ const fromConfig = (config) => ({
 const payload = (draft) => ({
   soft_takeover: draft.soft_takeover,
   player: draft.player,
+  mqtt_ignore: [...draft.mqtt_ignore].sort(),
   strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name, label: slot.label.trim() || null }] : [])),
   knobs: Object.entries(draft.knobs)
     .sort(([a], [b]) => a - b)
@@ -188,6 +191,11 @@ const handlers = {
       else Object.assign(next, { command: null, release_command: null });
       draft.buttons[name] = next;
     }),
+  mqtt: (id, on) =>
+    edit((draft) => {
+      const rest = draft.mqtt_ignore.filter((item) => item !== id);
+      draft.mqtt_ignore = on ? rest : [...rest, id];
+    }),
   global: (fn) => edit(fn),
 };
 
@@ -248,6 +256,7 @@ async function start() {
   try {
     const config = await request("/api/config");
     model.tokenFile = config.token_file;
+    model.mqtt = config.mqtt;
     model.token = loadToken();
     model.saved = fromConfig(config);
     model.draft = clone(model.saved);

@@ -10,6 +10,7 @@ from smc_mixer_daemon.audio import Device, Snapshot
 from smc_mixer_daemon.buttons import MEDIA_ACTIONS, Binding
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.knobs import KnobBinding
+from smc_mixer_daemon.mqtt import Command
 
 if TYPE_CHECKING:
     from smc_mixer_daemon.controller import Controller
@@ -127,9 +128,31 @@ class Actions:
         value = min(100, max(0, round(device.volume) + delta * knob.step))
         if value == round(device.volume):
             return
+        self.set_volume(device, value)
+
+    def set_volume(self, device: Device, value: int) -> None:
         self.c.audio.volume(device, value)
-        # Our own write: keep the cached volume current so rapid turns accumulate before the next refresh.
-        snapshot.devices[device.key] = replace(device, volume=float(value))
+        # Our own write: keep the cached volume current so rapid changes accumulate before the next refresh.
+        if self.c.snapshot is not None:
+            self.c.snapshot.devices[device.key] = replace(device, volume=float(value))
+
+    def remote(self, command: Command) -> None:
+        """Apply an MQTT command; like knobs, volume writes do not move the fader."""
+        if command.kind == "led":
+            button = Button[str(command.target)]
+            if command.value is None:
+                self.c.forced.pop(button, None)
+            else:
+                self.c.forced[button] = bool(command.value)
+            self.c.feedback()
+            return
+        device = self.device(int(command.target))
+        if device is None:
+            log.warning("MQTT %s for channel %s: no device is available there", command.kind, command.target)
+        elif command.kind == "mute":
+            self.c.audio.mute(device, bool(command.value))
+        elif isinstance(command.value, int):
+            self.set_volume(device, command.value)
 
     def toggle_all(self, kind: str, devices: list[Device]) -> None:
         """Mute everything, or undo it while keeping devices that were muted before."""

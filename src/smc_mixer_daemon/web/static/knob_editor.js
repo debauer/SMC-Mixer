@@ -1,3 +1,4 @@
+import { mqttGroup } from "./mqtt_editor.js";
 import { el } from "./dom.js";
 import { knobOf, KNOB_ACTIONS } from "./knobs.js";
 
@@ -44,6 +45,6 @@ export function renderKnobEditor(container, model, handlers, general) {
   if (action && action.id !== "none") {
     parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "STEP SIZE PER DETENT"), segment([1, 2, 5, 10].map((s) => [s, `${s} %`]), binding.step, (s) => handlers.knob(n, { step: s }))));
   }
-  parts.push(general(model, handlers.global));
-  container.replaceChildren(...parts);
+  parts.push(mqttGroup(model, handlers, `KNOB_${n}`, `knob/${n}`), general(model, handlers.global));
+  container.replaceChildren(...parts.filter(Boolean));
 }

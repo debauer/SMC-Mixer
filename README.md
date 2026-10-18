@@ -10,7 +10,8 @@ or observe it with the read-only terminal monitor.
   picks the default output or input, and play/pause drive an MPRIS player. Every button
   and knob can be bound to an action or shell command in the browser. Start it with
   `uv run smc-mixer-daemon run` and open <http://127.0.0.1:8765/>
-  ([daemon guide](docs/daemon.md)).
+  ([daemon guide](docs/daemon.md)). Buttons, knobs and faders are also published over
+  [MQTT](docs/daemon.md#mqtt), which can set LEDs, volume and mute.
 - **Python library:** read buttons, faders and relative DAW or absolute USER knob movements,
   read the device mode and fader positions, control button LEDs and knob blinking, and
   reconnect automatically.

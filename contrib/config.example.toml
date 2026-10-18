@@ -10,6 +10,17 @@ soft_takeover = false
 # host = "127.0.0.1"
 # port = 8765
 
+# Optional MQTT bridge (pip install 'smc-mixer[mqtt]'). Restart after editing, except `ignore`.
+# [mqtt]
+# enabled = true
+# host = "localhost"
+# port = 1883
+# username = "smc"       # optional
+# password = "secret"    # optional, needs username
+# tls = false
+# prefix = "smc"         # topics: smc/button/REC_1, smc/knob/1, smc/fader/1, ...
+# ignore = ["KNOB_8"]    # inputs that are not published or controlled; also set in the web interface
+
 # Optional. Remove this table for audio-only operation.
 [media]
 player = "firefox"

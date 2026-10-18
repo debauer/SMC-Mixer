@@ -1,4 +1,5 @@
 import { ACTIONS, effective, fixedBy, hasLed, ROWS, TRANSPORT } from "./buttons.js";
+import { mqttGroup } from "./mqtt_editor.js";
 import { el } from "./dom.js";
 
 const segment = (options, current, pick) =>
@@ -92,6 +93,6 @@ export function renderButtonEditor(container, model, handlers, general) {
     }
   }
   if (!fixed && action && action.shell) parts.push(shellEditor(model, name, binding, handlers));
-  parts.push(general(model, handlers.global));
-  container.replaceChildren(...parts);
+  parts.push(mqttGroup(model, handlers, name, `button/${name}`), general(model, handlers.global));
+  container.replaceChildren(...parts.filter(Boolean));
 }

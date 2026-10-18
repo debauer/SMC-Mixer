@@ -1,5 +1,6 @@
 import { renderButtonEditor } from "./button_editor.js";
 import { renderKnobEditor } from "./knob_editor.js";
+import { mqttGroup } from "./mqtt_editor.js";
 import { el, KIND, pad } from "./dom.js";
 
 const segment = (options, current, pick) =>
@@ -102,6 +103,6 @@ export function renderEditor(container, model, handlers) {
     );
     parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "TARGET"), targets(model, slot, change)));
   }
-  parts.push(general(model, handlers.global));
-  container.replaceChildren(...parts);
+  parts.push(mqttGroup(model, handlers, `FADER_${selected}`, `fader/${selected}`), general(model, handlers.global));
+  container.replaceChildren(...parts.filter(Boolean));
 }

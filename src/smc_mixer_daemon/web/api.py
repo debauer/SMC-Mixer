@@ -68,6 +68,8 @@ class Api:
         return {
             "token_file": str(self.token_file) if self.token_file else None,
             "soft_takeover": config.soft_takeover,
+            "mqtt": {"enabled": config.mqtt.enabled, "prefix": config.mqtt.prefix},
+            "mqtt_ignore": list(config.mqtt.ignore),
             "player": config.player,
             "strips": [{"channel": s.channel, "kind": s.kind, "name": s.name, "label": s.label} for s in config.strips],
             "buttons": [

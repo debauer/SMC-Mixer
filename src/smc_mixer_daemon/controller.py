@@ -52,6 +52,7 @@ class Controller:
         self.available: dict[int, bool] = {}
         self.held: set[Button] = set()
         self.leds: dict[Button, bool] = {}
+        self.forced: dict[Button, bool] = {}  # LED states set over MQTT
         self.blinks: dict[int, bool] = {}
         self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
         self.knobs = {knob.knob: knob for knob in config.knobs if knob.action != "none"}
@@ -206,6 +207,7 @@ class Controller:
             # The mixer's LEDs can drift from what we last sent; resend everything now and then.
             self.next_led_resync = now + LED_RESYNC
             self.leds.clear()
+        wanted.update(self.forced)
         for button, started in list(self.pulses.items()):
             phase = int((now - started) / PULSE_STEP)
             if phase >= 2 * PULSE_COUNT:

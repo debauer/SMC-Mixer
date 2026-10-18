@@ -221,6 +221,56 @@ contents once per browser session (it is never sent to the page). Other settings
 token, and unchanged commands are kept without one. Changes to commands are made over HTTP
 only with that token, so other local users and web pages cannot add commands.
 
+## MQTT
+
+With an `[mqtt]` table the daemon connects to a broker, publishes every button, knob and
+fader, and accepts commands for LEDs, volume and mute. It needs the optional client library
+(`uv sync --extra mqtt`, or `pip install 'smc-mixer[mqtt]'`); with `enabled = true` and no
+library the daemon refuses to start. A broker that is unreachable is retried in the
+background (1-30 seconds) and the mixer keeps working meanwhile.
+
+```toml
+[mqtt]
+enabled = true
+host = "localhost"   # default
+port = 1883          # default
+username = "smc"     # optional
+password = "secret"  # optional, needs username; stored in plain text, so keep the file private
+tls = false          # true: TLS with the system's CA certificates
+prefix = "smc"       # all topics start with this, no wildcards or edge slashes
+ignore = ["KNOB_8"]  # inputs that are neither published nor controlled
+```
+
+Broker settings are read at startup. `ignore` takes effect when the configuration is reloaded;
+it holds button names (`REC_1`, `BANK_LEFT`, ...), `KNOB_1`-`KNOB_8` and `FADER_1`-`FADER_8`.
+`FADER_n` also covers the channel topics of strip `n`. The web interface edits only `ignore`: with MQTT
+enabled, every key, encoder and channel editor has an *MQTT* switch showing its topic.
+The web interface never shows the password and cannot change the broker settings.
+
+| Topic below `<prefix>/` | Payload | Direction |
+|---|---|---|
+| `status` | `online` / `offline` (retained; the broker sends `offline` if the daemon vanishes) | published |
+| `button/<NAME>` | `ON` while held, `OFF` on release, for every physical button, bound or not | published |
+| `knob/<n>` | signed relative steps since the last 25 ms tick, e.g. `-1`, `3` | published |
+| `fader/<n>` | physical position `0`-`100` (retained) | published |
+| `channel/<n>/volume` | device volume `0`-`100` of the strip's device (retained) | published |
+| `channel/<n>/mute` | `ON` / `OFF` (retained) | published |
+| `led/<NAME>/set` | `ON`, `OFF` or `AUTO` (back to the normal LED behavior) | subscribed |
+| `channel/<n>/volume/set` | `0`-`100` | subscribed |
+| `channel/<n>/mute/set` | `ON` / `OFF` | subscribed |
+
+Only buttons that have an LED (REC, SOLO, MUTE, SELECT, REWIND, FAST_FORWARD, STOP, PLAY, RECORD) accept
+`led/<NAME>/set`; a forced state lasts until `AUTO`, a configuration reload or a mixer reconnect. Volume commands behave like knobs: the
+fader does not move, and in direct mode the next fader movement takes over again. Invalid or unknown messages are
+logged and ignored, and commands are dropped while the mixer is not in DAW mode. Commands for inputs
+in `ignore` are dropped as well.
+
+```sh
+mosquitto_pub -t smc/led/REC_1/set -m ON
+mosquitto_pub -t smc/channel/1/volume/set -m 35
+mosquitto_sub -v -t 'smc/#'
+```
+
 ## Install a user service
 
 For an executable independent of the checkout's development environment:

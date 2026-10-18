@@ -7,15 +7,17 @@ from collections.abc import Callable
 from itertools import islice
 from pathlib import Path
 
-from smc_mixer import ButtonEvent, DeviceMode, KnobEvent, MidiProtocol, SmcMixer, SmcMixerError
+from smc_mixer import ButtonEvent, DeviceMode, FaderEvent, KnobEvent, MidiProtocol, SmcMixer, SmcMixerError
 from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config, ConfigError, load
 from smc_mixer_daemon.controller import Controller
 from smc_mixer_daemon.inbox import Inbox
 from smc_mixer_daemon.media import Media
+from smc_mixer_daemon.mqtt import Mqtt
 from smc_mixer_daemon.status import Board, BoardHandler, describe
 from smc_mixer_daemon.subscription import Subscription
+from smc_mixer_daemon.takeover import percent
 from smc_mixer_daemon.web import server as web_server
 from smc_mixer_daemon.web.api import Api
 from smc_mixer_daemon.web.auth import ensure_token
@@ -39,7 +41,13 @@ class Notices:
             self.last[area] = message, time.monotonic()
 
 
-def control_loop(config: Config, stop: threading.Event, subscription: Subscription, board: Board | None = None) -> None:
+def control_loop(
+    config: Config,
+    stop: threading.Event,
+    subscription: Subscription,
+    board: Board | None = None,
+    mqtt: Mqtt | None = None,
+) -> None:
     """Run until stopped or until `board.reload` asks for a restart with a new configuration."""
     board = board or Board(config)
     audio = Audio()
@@ -74,8 +82,15 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                 for event in events:
                     if isinstance(event, ButtonEvent) and event.protocol == MidiProtocol.MCU and not event.ambiguous:
                         board.key(event.button.name, event.pressed)
+                        if mqtt:
+                            mqtt.button(event.button.name, event.pressed)
                     elif isinstance(event, KnobEvent) and event.protocol == MidiProtocol.MCU and event.delta:
                         board.turn(event.knob, event.delta)
+                        if mqtt:
+                            mqtt.knob(event.knob, event.delta)
+                    elif isinstance(event, FaderEvent) and event.protocol == MidiProtocol.MCU and not event.ambiguous:
+                        if mqtt:
+                            mqtt.fader(event.fader, percent(event.value))
                 try:
                     if controller.generation != generation:
                         controller.suspend()
@@ -103,6 +118,12 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                             if inbox.generation != generation or stop.is_set():
                                 break
                             controller.event(event)
+                    commands = mqtt.commands() if mqtt else []
+                    for command in commands:
+                        if controller.ready:
+                            controller.actions.remote(command)
+                        else:
+                            log.info("ignoring MQTT command %s: mixer control is not active", command)
                     controller.poll_media()
                     controller.feedback()
                 except BackendError as exc:
@@ -114,8 +135,12 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                     notices.error("mixer control", exc)
                     controller.suspend()
                     next_initialize = time.monotonic() + 2
+            elif mqtt:
+                mqtt.commands()  # nobody to execute them; stale commands must not pile up or fire later
             if tick >= next_publish:
                 board.publish(describe(mixer, controller, config))
+                if mqtt:
+                    mqtt.channels(config.strips, controller.snapshot if controller and controller.ready else None)
                 next_publish = tick + 0.2
             stop.wait(max(0, 0.025 - (time.monotonic() - tick)))
     finally:
@@ -133,6 +158,9 @@ def run(config_path: Path, config: Config, stop: threading.Event) -> None:
     logging.getLogger("smc_mixer_daemon").addHandler(handler)
     subscription = Subscription()
     subscription.start()
+    mqtt = Mqtt(config.mqtt) if config.mqtt.enabled else None
+    if mqtt:
+        mqtt.start()
     web = None
     if config.web.enabled:
         token_file = config_path.parent / "web-token"
@@ -142,7 +170,9 @@ def run(config_path: Path, config: Config, stop: threading.Event) -> None:
         while not stop.is_set():
             board.reload.clear()
             board.config = config
-            control_loop(config, stop, subscription, board)
+            if mqtt:
+                mqtt.configure(config.mqtt)
+            control_loop(config, stop, subscription, board, mqtt)
             if board.reload.is_set() and not stop.is_set():
                 try:
                     config = load(config_path)
@@ -155,4 +185,6 @@ def run(config_path: Path, config: Config, stop: threading.Event) -> None:
             web[0].shutdown()
             web[0].server_close()
         subscription.close()
+        if mqtt:
+            mqtt.close()
         logging.getLogger("smc_mixer_daemon").removeHandler(handler)

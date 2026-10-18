@@ -3,14 +3,27 @@
 import json
 import os
 import tempfile
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from smc_mixer_daemon.config import Config, ConfigError, WebConfig, parse
+from smc_mixer_daemon.mqtt_config import MqttConfig, MqttConfigError, parse_mqtt
 
 
 def quote(value: str) -> str:
     return json.dumps(value, ensure_ascii=False).replace("\x7f", "\\u007f")
+
+
+def render_mqtt(mqtt: MqttConfig) -> list[str]:
+    lines = ["[mqtt]", f"enabled = {str(mqtt.enabled).lower()}", f"host = {quote(mqtt.host)}", f"port = {mqtt.port}"]
+    if mqtt.username is not None:
+        lines.append(f"username = {quote(mqtt.username)}")
+    if mqtt.password is not None:
+        lines.append(f"password = {quote(mqtt.password)}")
+    lines += [f"tls = {str(mqtt.tls).lower()}", f"prefix = {quote(mqtt.prefix)}"]
+    lines += [f"ignore = [{', '.join(quote(item) for item in mqtt.ignore)}]", ""]
+    return lines
 
 
 def render(config: Config) -> str:
@@ -21,6 +34,8 @@ def render(config: Config) -> str:
         web = config.web
         enabled = str(web.enabled).lower()
         lines += ["[web]", f"enabled = {enabled}", f"host = {quote(web.host)}", f"port = {web.port}", ""]
+    if config.mqtt != MqttConfig():
+        lines += render_mqtt(config.mqtt)
     for strip in sorted(config.strips, key=lambda row: row.channel):
         lines += ["[[strips]]", f"channel = {strip.channel}", f"kind = {quote(strip.kind)}"]
         lines.append(f"name = {quote(strip.name)}")
@@ -46,7 +61,7 @@ def render(config: Config) -> str:
 
 
 def from_json(data: Any, current: Config) -> Config:
-    """Validate an edited configuration; the web section is never editable remotely."""
+    """Validate an edited configuration; only the MQTT ignore list is editable, never web or broker settings."""
     if not isinstance(data, dict):
         raise ConfigError("configuration: expected an object")
     soft = data.get("soft_takeover", False)
@@ -56,11 +71,16 @@ def from_json(data: Any, current: Config) -> Config:
             raw[key] = data[key]
     if data.get("player") is not None:
         raw["media"] = {"player": data["player"]}
-    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons", "knobs"}
+    ignore = data.get("mqtt_ignore", list(current.mqtt.ignore))
+    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons", "knobs", "mqtt_ignore"}
     if unknown:
         raise ConfigError(f"configuration: unknown keys: {', '.join(sorted(unknown))}")
     parsed = parse(raw)
-    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons, parsed.knobs)
+    try:
+        mqtt = replace(current.mqtt, ignore=parse_mqtt({"ignore": ignore}).ignore)
+    except MqttConfigError as exc:
+        raise ConfigError(str(exc)) from exc
+    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons, parsed.knobs, mqtt)
 
 
 def save(path: Path, config: Config) -> None:
