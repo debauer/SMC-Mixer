@@ -91,21 +91,21 @@ function renderHeader() {
   const { mixer } = model.status;
   const connected = Boolean(mixer.connected) && !model.offline;
   $("device-dot").className = `dot${connected ? " ok" : ""}`;
-  $("device-text").textContent = model.offline ? "Daemon offline" : connected ? "USB-MIDI verbunden" : "nicht verbunden";
+  $("device-text").textContent = model.offline ? "Daemon offline" : connected ? "USB-MIDI connected" : "not connected";
   $("mode-text").textContent = mixer.mode || "-";
   $("mode-pill").className = `pill mode-${(mixer.mode || "none").toLowerCase()}`;
-  $("control-text").textContent = { active: "Steuerung aktiv", suspended: "pausiert (DAW-Modus nötig)", waiting: "" }[mixer.control] || "";
+  $("control-text").textContent = { active: "Control active", suspended: "paused (DAW mode required)", waiting: "" }[mixer.control] || "";
   const dirty = model.draft && isDirty();
   $("dirty").hidden = !dirty;
   $("save").disabled = !dirty;
   $("discard").disabled = !dirty;
 }
 
-const PLAYBACK = { Playing: "spielt", Paused: "pausiert", Stopped: "gestoppt" };
+const PLAYBACK = { Playing: "playing", Paused: "paused", Stopped: "stopped" };
 
 function renderMedia() {
   const { media } = model.status;
-  const text = media && media.player ? `${media.player}: ${PLAYBACK[media.state] || "nicht erreichbar"}` : "";
+  const text = media && media.player ? `${media.player}: ${PLAYBACK[media.state] || "unreachable"}` : "";
   $("media-state").textContent = text;
 }
 
@@ -219,7 +219,7 @@ async function save() {
     model.draft = clone(model.saved);
     banner("");
   } catch (error) {
-    banner(`Speichern fehlgeschlagen: ${error.message}`);
+    banner(`Saving failed: ${error.message}`);
   }
   renderAll();
 }
@@ -252,7 +252,7 @@ async function start() {
     model.saved = fromConfig(config);
     model.draft = clone(model.saved);
   } catch (error) {
-    banner(`Konfiguration konnte nicht geladen werden: ${error.message}`);
+    banner(`Could not load the configuration: ${error.message}`);
     return;
   }
   await Promise.all([poll(), refreshDevices()]);

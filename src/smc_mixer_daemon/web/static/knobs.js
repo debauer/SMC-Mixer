@@ -1,10 +1,10 @@
 import { el } from "./dom.js";
 
 export const KNOB_ACTIONS = [
-  { id: "none", label: "Nicht belegt", hint: "Encoder wird ignoriert" },
-  { id: "vol_ch", label: "Kanal-Lautstärke", hint: "relativ, Ziel eines Kanals", channel: true },
-  { id: "vol_out", label: "Ausgang laut/leise", hint: "Standard-Ausgang" },
-  { id: "vol_in", label: "Eingang laut/leise", hint: "Standard-Eingang" },
+  { id: "none", label: "Unassigned", hint: "encoder is ignored" },
+  { id: "vol_ch", label: "Channel volume", hint: "relative, target of a channel", channel: true },
+  { id: "vol_out", label: "Output volume", hint: "default output" },
+  { id: "vol_in", label: "Input volume", hint: "default input" },
 ];
 const LABEL = Object.fromEntries(KNOB_ACTIONS.map((a) => [a.id, a.label]));
 
@@ -27,7 +27,7 @@ export function createKnobs(hosts, onSelect) {
       const binding = knobOf(draft, index + 1);
       const used = binding.action !== "none";
       const on = selected.kind === "knob" && selected.id === index + 1;
-      label.textContent = used ? `${LABEL[binding.action]}${binding.channel ? ` ${binding.channel}` : ""}` : "Frei";
+      label.textContent = used ? `${LABEL[binding.action]}${binding.channel ? ` ${binding.channel}` : ""}` : "Free";
       card.className = `knob${card.classList.contains("flash") ? " flash" : ""}${used ? " used" : ""}${on ? " selected" : ""}`;
       card.setAttribute("aria-pressed", String(on));
       card.setAttribute("aria-label", `Encoder ${index + 1}: ${label.textContent}`);

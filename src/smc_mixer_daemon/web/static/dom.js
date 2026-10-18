@@ -11,8 +11,8 @@ export function el(tag, attrs = {}, ...children) {
 }
 
 export const KIND = {
-  sink: { label: "AUSGANG", cls: "sink" },
-  source: { label: "EINGANG", cls: "source" },
+  sink: { label: "OUTPUT", cls: "sink" },
+  source: { label: "INPUT", cls: "source" },
 };
 
 export const pad = (n) => String(n).padStart(2, "0");

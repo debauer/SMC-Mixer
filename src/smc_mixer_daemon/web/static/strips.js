@@ -46,12 +46,12 @@ export function createStrips(container, onSelect) {
       const level = device ? device.volume : raw == null ? 0 : percent(raw);
       card.className = `strip ${kind ? kind.cls : "free"}${(selected.kind === "strip" && selected.id === channel) ? " selected" : ""}${kind && !device ? " offline" : ""}`;
       card.setAttribute("aria-pressed", String((selected.kind === "strip" && selected.id === channel)));
-      card.setAttribute("aria-label", `Kanal ${channel}: ${slot && slot.name ? slot.name : "frei"}`);
+      card.setAttribute("aria-label", `Channel ${channel}: ${slot && slot.name ? slot.name : "free"}`);
       parts.fill.style.height = `${kind ? Math.min(100, level) : 0}%`;
       parts.cap.style.bottom = `calc(${raw == null ? level : percent(raw)}% - 8px)`;
       parts.value.textContent = kind && device ? `${device.volume}%` : raw == null ? "-" : `${percent(raw)}%`;
-      parts.name.textContent = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Frei";
-      parts.kind.textContent = kind ? (device && device.owned === false ? "FADER ANGLEICHEN" : kind.label) : "FREI";
+      parts.name.textContent = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Free";
+      parts.kind.textContent = kind ? (device && device.owned === false ? "MATCH FADER" : kind.label) : "FREE";
       parts.mute.classList.toggle("on", Boolean(device && device.muted));
       parts.solo.classList.toggle("on", Boolean(device && device.default));
     });

@@ -15,26 +15,26 @@ export const TRANSPORT = [
   ["FAST_FORWARD", ">>"],
   ["BANK_LEFT", "Bank <"],
   ["BANK_RIGHT", "Bank >"],
-  ["UP", "Hoch"],
-  ["DOWN", "Runter"],
-  ["LEFT", "Links"],
-  ["RIGHT", "Rechts"],
+  ["UP", "Up"],
+  ["DOWN", "Down"],
+  ["LEFT", "Left"],
+  ["RIGHT", "Right"],
 ];
 
 export const ACTIONS = [
-  { id: "none", label: "Nicht belegt", hint: "Taste wird ignoriert" },
-  { id: "mute_ch", label: "Kanal stumm", hint: "Ziel eines Kanals", channel: true, state: true },
-  { id: "select_ch", label: "Kanal wählen", hint: "Gerät als Standard", channel: true, state: true },
-  { id: "mic_mute", label: "Mikro stumm", hint: "alle Eingänge", state: true },
-  { id: "out_mute", label: "Ausgänge stumm", hint: "alle Ausgänge", state: true },
-  { id: "ptt", label: "Push-to-Talk", hint: "Mikro nur beim Halten", state: true },
-  { id: "out_cycle", label: "Ausgang wechseln", hint: "Ausgangs-Kanäle rotieren" },
-  { id: "play_pause", label: "Play / Pause", hint: "MPRIS umschalten", state: true },
+  { id: "none", label: "Unassigned", hint: "key is ignored" },
+  { id: "mute_ch", label: "Mute channel", hint: "target of a channel", channel: true, state: true },
+  { id: "select_ch", label: "Select channel", hint: "device as default", channel: true, state: true },
+  { id: "mic_mute", label: "Mute mics", hint: "all inputs", state: true },
+  { id: "out_mute", label: "Mute outputs", hint: "all outputs", state: true },
+  { id: "ptt", label: "Push-to-Talk", hint: "mic only while held", state: true },
+  { id: "out_cycle", label: "Cycle output", hint: "rotate output channels" },
+  { id: "play_pause", label: "Play / Pause", hint: "MPRIS toggle", state: true },
   { id: "play", label: "Play", hint: "MPRIS", state: true },
   { id: "pause", label: "Pause", hint: "MPRIS", state: true },
-  { id: "next", label: "Nächster Titel", hint: "MPRIS" },
-  { id: "previous", label: "Vorheriger Titel", hint: "MPRIS" },
-  { id: "shell", label: "Shell-Befehl", hint: "sh -c, eigener Befehl", shell: true },
+  { id: "next", label: "Next track", hint: "MPRIS" },
+  { id: "previous", label: "Previous track", hint: "MPRIS" },
+  { id: "shell", label: "Shell command", hint: "sh -c, your own command", shell: true },
 ];
 const LABEL = Object.fromEntries(ACTIONS.map((a) => [a.id, a.label]));
 
@@ -72,7 +72,7 @@ export function createButtons(hosts, transport, onSelect) {
     return card;
   };
   CH.forEach((channel, index) => {
-    for (const [tag, row] of ROWS) hosts[index].append(make(`${row}_${channel}`, tag, `${tag} Kanal ${channel}`));
+    for (const [tag, row] of ROWS) hosts[index].append(make(`${row}_${channel}`, tag, `${tag} channel ${channel}`));
   });
   for (const [name, tag] of TRANSPORT) transport.append(make(name, tag));
 
@@ -85,12 +85,12 @@ export function createButtons(hosts, transport, onSelect) {
       const binding = effective(draft, name);
       const fixed = fixedBy(draft, name);
       const used = binding.action !== "none";
-      let text = used ? LABEL[binding.action] : "Frei";
+      let text = used ? LABEL[binding.action] : "Free";
       if (binding.channel) text += ` ${binding.channel}`;
       label.textContent = text;
       card.className = `key${card.classList.contains("flash") ? " flash" : ""}${used ? " used" : ""}${fixed ? " fixed" : ""}${selected.kind === "button" && selected.id === name ? " selected" : ""}`;
       card.setAttribute("aria-pressed", String(selected.kind === "button" && selected.id === name));
-      card.setAttribute("aria-label", `Taste ${tag}: ${text}`);
+      card.setAttribute("aria-label", `Key ${tag}: ${text}`);
       led.classList.toggle("on", Boolean(status.leds && status.leds[name]));
       card.classList.toggle("pressed", keys.held.includes(name));
     }

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,13 +10,13 @@
 <body>
 <header class="top">
   <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>SMC<span class="slash">/</span>CTRL</h1>
-  <div class="pill" id="device-pill"><span class="dot" id="device-dot"></span><span>M-VAVE SMC-Mixer</span><span class="mono muted" id="device-text">wartet</span></div>
-  <div class="pill" id="mode-pill"><span class="label">MODUS</span><span class="mono" id="mode-text">-</span><span class="muted small" id="control-text"></span></div>
+  <div class="pill" id="device-pill"><span class="dot" id="device-dot"></span><span>M-VAVE SMC-Mixer</span><span class="mono muted" id="device-text">waiting</span></div>
+  <div class="pill" id="mode-pill"><span class="label">MODE</span><span class="mono" id="mode-text">-</span><span class="muted small" id="control-text"></span></div>
   <div class="spacer"></div>
-  <span class="mono dirty" id="dirty" hidden>&#9679; ungespeichert</span>
+  <span class="mono dirty" id="dirty" hidden>&#9679; unsaved</span>
   <div class="actions">
-    <button type="button" class="btn" id="discard" disabled>Verwerfen</button>
-    <button type="button" class="btn primary" id="save" disabled>Speichern</button>
+    <button type="button" class="btn" id="discard" disabled>Discard</button>
+    <button type="button" class="btn primary" id="save" disabled>Save</button>
   </div>
 </header>
 <p class="banner" id="banner" role="status" hidden></p>
@@ -24,28 +24,28 @@
   <div class="column">
     <section class="panel" aria-labelledby="knobs-title">
       <div class="panel-head"><h2 class="label" id="knobs-title">ENCODER</h2>
-        <div class="legend mono"><span class="muted">relativ (−/+) · frei belegbar, nicht an den Kanal gebunden</span></div>
+        <div class="legend mono"><span class="muted">relative (−/+) · freely assignable, not tied to a channel</span></div>
       </div>
       <div class="knob-row" id="knobs"></div>
     </section>
     <section class="panel" aria-labelledby="strips-title">
-      <div class="panel-head"><h2 class="label" id="strips-title">KANÄLE</h2>
-        <div class="legend mono"><span class="c-sink">&#9632; Ausgang</span><span class="c-source">&#9632; Eingang</span><span class="muted">Nur M und SEL gehören zum Kanal; Encoder, S und R sind frei belegbar</span></div>
+      <div class="panel-head"><h2 class="label" id="strips-title">CHANNELS</h2>
+        <div class="legend mono"><span class="c-sink">&#9632; Output</span><span class="c-source">&#9632; Input</span><span class="muted">Only M and SEL belong to the channel; encoders, S and R are freely assignable</span></div>
       </div>
       <div class="strips" id="strips"></div>
     </section>
     <section class="panel" aria-labelledby="buttons-title">
       <div class="panel-head"><h2 class="label" id="buttons-title">TRANSPORT &amp; NAVIGATION</h2>
-        <div class="legend mono"><span id="media-state" class="c-sink"></span><span class="c-sink">&#9632; belegt</span><span class="muted">gestrichelt: fest durch Kanal</span></div>
+        <div class="legend mono"><span id="media-state" class="c-sink"></span><span class="c-sink">&#9632; assigned</span><span class="muted">dashed: fixed by channel</span></div>
       </div>
       <div class="key-grid transport" id="buttons"></div>
     </section>
     <section class="panel" aria-labelledby="log-title">
-      <div class="panel-head"><h2 class="label" id="log-title">EREIGNISSE</h2><span class="mono muted small">Daemon-Log</span></div>
+      <div class="panel-head"><h2 class="label" id="log-title">EVENTS</h2><span class="mono muted small">Daemon log</span></div>
       <ol class="log mono" id="log"></ol>
     </section>
   </div>
-  <aside class="panel editor" id="editor" aria-label="Einstellungen"></aside>
+  <aside class="panel editor" id="editor" aria-label="Settings"></aside>
 </main>
 <script type="module" src="app.js"></script>
 </body>

@@ -18,11 +18,11 @@ export function renderKnobEditor(container, model, handlers, general) {
   const assigned = draft.strips.flatMap((slot, i) => (slot && slot.name ? [i + 1] : []));
   const parts = [
     el("div", { class: "editor-head" }, el("h2", { class: "label sink" }, "ENCODER"), el("div", { class: "title" }, `Encoder ${n}`)),
-    el("p", { class: "note" }, "Der Encoder sendet nur Schritte (−/+), keine Position. Jeder Schritt ändert die Lautstärke um die gewählte Schrittweite; Stummschaltung bleibt unberührt."),
+    el("p", { class: "note" }, "The encoder only sends steps (−/+), no position. Each step changes the volume by the chosen step size; muting is left untouched."),
     el(
       "div",
       { class: "group" },
-      el("h3", { class: "label" }, "AKTION"),
+      el("h3", { class: "label" }, "ACTION"),
       el(
         "div",
         { class: "actions-grid" },
@@ -32,17 +32,17 @@ export function renderKnobEditor(container, model, handlers, general) {
           return el(
             "button",
             { type: "button", class: `target sink${on ? " on" : ""}`, disabled: Boolean(blocked), "aria-pressed": String(on), onclick: () => handlers.knob(n, { action: option.id, channel: option.channel ? assigned[0] : null }) },
-            el("span", { class: "target-text" }, el("b", {}, option.label), el("span", { class: "muted small" }, blocked ? "braucht belegten Kanal" : option.hint)),
+            el("span", { class: "target-text" }, el("b", {}, option.label), el("span", { class: "muted small" }, blocked ? "needs an assigned channel" : option.hint)),
           );
         }),
       ),
     ),
   ];
   if (action && action.channel) {
-    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "KANAL"), segment(assigned.map((c) => [c, String(c)]), binding.channel, (c) => handlers.knob(n, { channel: c }))));
+    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "CHANNEL"), segment(assigned.map((c) => [c, String(c)]), binding.channel, (c) => handlers.knob(n, { channel: c }))));
   }
   if (action && action.id !== "none") {
-    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "SCHRITTWEITE PRO RASTUNG"), segment([1, 2, 5, 10].map((s) => [s, `${s} %`]), binding.step, (s) => handlers.knob(n, { step: s }))));
+    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "STEP SIZE PER DETENT"), segment([1, 2, 5, 10].map((s) => [s, `${s} %`]), binding.step, (s) => handlers.knob(n, { step: s }))));
   }
   parts.push(general(model, handlers.global));
   container.replaceChildren(...parts);

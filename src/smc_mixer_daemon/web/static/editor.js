@@ -18,16 +18,16 @@ function targets({ draft, devices, selected }, slot, change) {
   });
   const rows = devices.devices.filter((device) => device.kind === slot.kind);
   if (slot.name && !rows.some((device) => device.name === slot.name)) {
-    rows.unshift({ kind: slot.kind, name: slot.name, description: "nicht verfügbar", missing: true });
+    rows.unshift({ kind: slot.kind, name: slot.name, description: "unavailable", missing: true });
   }
-  if (!rows.length) return el("p", { class: "muted small" }, "Keine Geräte gefunden.");
+  if (!rows.length) return el("p", { class: "muted small" }, "No devices found.");
   return el(
     "div",
     { class: "targets" },
     ...rows.map((device) => {
       const owner = taken.get(`${device.kind}\0${device.name}`);
       const on = device.name === slot.name;
-      const badge = owner ? `Kanal ${owner}` : device.default ? "Standard" : device.missing ? "fehlt" : "";
+      const badge = owner ? `Channel ${owner}` : device.default ? "Default" : device.missing ? "missing" : "";
       return el(
         "button",
         { type: "button", class: `target ${KIND[slot.kind].cls}${on ? " on" : ""}`, disabled: Boolean(owner), "aria-pressed": String(on), onclick: () => change((s) => (s.name = device.name)) },
@@ -45,21 +45,21 @@ export function general({ draft, devices }, update) {
   const select = el(
     "select",
     { id: "player", onchange: (event) => update((d) => (d.player = event.target.value || null)) },
-    el("option", { value: "" }, "Keiner (Media-Tasten aus)"),
+    el("option", { value: "" }, "None (media keys off)"),
     ...players.map((name) => el("option", { value: name, selected: name === draft.player }, name)),
   );
   return el(
     "div",
     { class: "group" },
-    el("h3", { class: "label" }, "ALLGEMEIN"),
+    el("h3", { class: "label" }, "GENERAL"),
     el(
       "label",
       { class: "check" },
       el("input", { type: "checkbox", checked: draft.soft_takeover, onchange: (event) => update((d) => (d.soft_takeover = event.target.checked)) }),
-      el("span", {}, el("b", {}, "Soft-Takeover"), el("span", { class: "muted small" }, "Fader übernimmt erst, wenn er die Lautstärke trifft.")),
+      el("span", {}, el("b", {}, "Soft-Takeover"), el("span", { class: "muted small" }, "The fader only takes over once it reaches the current volume.")),
     ),
-    el("label", { class: "field", for: "player" }, el("span", { class: "label" }, "MEDIA-PLAYER (PLAY / PAUSE)"), select),
-    devices.player_error && el("p", { class: "muted small" }, `Playerliste nicht verfügbar: ${devices.player_error}`),
+    el("label", { class: "field", for: "player" }, el("span", { class: "label" }, "MEDIA PLAYER (PLAY / PAUSE)"), select),
+    devices.player_error && el("p", { class: "muted small" }, `Player list unavailable: ${devices.player_error}`),
   );
 }
 
@@ -71,15 +71,15 @@ export function renderEditor(container, model, handlers) {
   const slot = draft.strips[selected - 1];
   const kind = slot ? KIND[slot.kind] : null;
   const device = slot && devices.devices.find((row) => row.kind === slot.kind && row.name === slot.name);
-  const title = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Frei";
+  const title = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Free";
   const change = (fn) => handlers.strip(selected, fn);
   const parts = [
-    el("div", { class: "editor-head" }, el("h2", { class: `label ${kind ? kind.cls : ""}` }, `KANAL ${pad(selected)}`), el("div", { class: "title" }, title)),
+    el("div", { class: "editor-head" }, el("h2", { class: `label ${kind ? kind.cls : ""}` }, `CHANNEL ${pad(selected)}`), el("div", { class: "title" }, title)),
     el(
       "div",
       { class: "group" },
-      el("h3", { class: "label" }, "QUELLENTYP"),
-      segment([["sink", "Ausgang"], ["source", "Eingang"], ["none", "Frei"]], slot ? slot.kind : "none", (id) =>
+      el("h3", { class: "label" }, "SOURCE TYPE"),
+      segment([["sink", "Output"], ["source", "Input"], ["none", "Free"]], slot ? slot.kind : "none", (id) =>
         handlers.kind(selected, id === "none" ? null : id),
       ),
     ),
@@ -89,18 +89,18 @@ export function renderEditor(container, model, handlers) {
       el(
         "label",
         { class: "field", for: "label" },
-        el("span", { class: "label" }, "BEZEICHNUNG"),
+        el("span", { class: "label" }, "LABEL"),
         el("input", {
           id: "label",
           type: "text",
           maxlength: "40",
           value: slot.label,
-          placeholder: device ? device.description : "automatisch aus Ziel",
+          placeholder: device ? device.description : "automatic from target",
           oninput: (event) => handlers.label(selected, event.target.value),
         }),
       ),
     );
-    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "ZIEL"), targets(model, slot, change)));
+    parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "TARGET"), targets(model, slot, change)));
   }
   parts.push(general(model, handlers.global));
   container.replaceChildren(...parts);

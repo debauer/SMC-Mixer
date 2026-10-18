@@ -14,7 +14,7 @@ export function buttonTitle(name) {
   const match = /^(MUTE|REC|SELECT|SOLO)_(\d)$/.exec(name);
   if (!match) return TRANSPORT.find(([id]) => id === name)[1];
   const row = ROWS.find(([, id]) => id === match[1])[0];
-  return `${row} Kanal ${match[2]}`;
+  return `${row} channel ${match[2]}`;
 }
 
 const field = (id, title, rows, value, placeholder, oninput) =>
@@ -26,18 +26,18 @@ const field = (id, title, rows, value, placeholder, oninput) =>
   );
 
 function shellEditor(model, name, binding, handlers) {
-  const tokenHint = model.tokenFile ? `Inhalt von ${model.tokenFile}` : "Token des Daemons";
+  const tokenHint = model.tokenFile ? `contents of ${model.tokenFile}` : "daemon token";
   return el(
     "div",
     { class: "group" },
-    field("command", "BEFEHL (/bin/sh -c)", 4, binding.command, "z. B. notify-send Hallo", (text) => handlers.command(name, "command", text)),
-    field("release", "BEFEHL BEIM LOSLASSEN (OPTIONAL)", 2, binding.release_command, "optional", (text) => handlers.command(name, "release_command", text)),
+    field("command", "COMMAND (/bin/sh -c)", 4, binding.command, "e.g. notify-send Hello", (text) => handlers.command(name, "command", text)),
+    field("release", "COMMAND ON RELEASE (OPTIONAL)", 2, binding.release_command, "optional", (text) => handlers.command(name, "release_command", text)),
     el(
       "label",
       { class: "field", for: "token" },
-      el("span", { class: "label" }, "ZUGRIFFSTOKEN"),
+      el("span", { class: "label" }, "ACCESS TOKEN"),
       el("input", { id: "token", type: "password", autocomplete: "off", value: model.token, placeholder: tokenHint, oninput: (event) => handlers.token(event.target.value) }),
-      el("span", { class: "muted small" }, "Zum Speichern geänderter Befehle nötig, damit andere Programme auf diesem Rechner keine Befehle einschleusen können. " + tokenHint + "."),
+      el("span", { class: "muted small" }, "Required to save changed commands, so other programs on this computer cannot inject commands. " + tokenHint + "."),
     ),
   );
 }
@@ -49,18 +49,18 @@ export function renderButtonEditor(container, model, handlers, general) {
   const fixed = fixedBy(draft, name);
   const action = ACTIONS.find((a) => a.id === binding.action);
   const parts = [
-    el("div", { class: "editor-head" }, el("h2", { class: "label sink" }, "TASTE"), el("div", { class: "title" }, buttonTitle(name))),
+    el("div", { class: "editor-head" }, el("h2", { class: "label sink" }, "KEY"), el("div", { class: "title" }, buttonTitle(name))),
   ];
   if (fixed) {
-    parts.push(el("p", { class: "note" }, `Fest belegt durch Kanal ${fixed.channel}. Gib den Kanal frei, um die Taste anders zu belegen.`));
+    parts.push(el("p", { class: "note" }, `Fixed by channel ${fixed.channel}. Free the channel to assign this key differently.`));
   } else {
     const assigned = draft.strips.flatMap((slot, i) => (slot && slot.name ? [i + 1] : []));
     parts.push(
       el(
         "div",
         { class: "group" },
-        el("h3", { class: "label" }, "AKTION"),
-        binding.standard && el("p", { class: "muted small" }, "Standard-Belegung"),
+        el("h3", { class: "label" }, "ACTION"),
+        binding.standard && el("p", { class: "muted small" }, "Default assignment"),
         el(
           "div",
           { class: "actions-grid" },
@@ -70,7 +70,7 @@ export function renderButtonEditor(container, model, handlers, general) {
             return el(
               "button",
               { type: "button", class: `target sink${on ? " on" : ""}`, disabled: Boolean(blocked), "aria-pressed": String(on), onclick: () => handlers.binding(name, { action: option.id, channel: option.channel ? assigned[0] : null }) },
-              el("span", { class: "target-text" }, el("b", {}, option.label), el("span", { class: "muted small" }, blocked ? "braucht belegten Kanal" : option.hint)),
+              el("span", { class: "target-text" }, el("b", {}, option.label), el("span", { class: "muted small" }, blocked ? "needs an assigned channel" : option.hint)),
             );
           }),
         ),
@@ -81,13 +81,13 @@ export function renderButtonEditor(container, model, handlers, general) {
         el(
           "div",
           { class: "group" },
-          el("h3", { class: "label" }, "KANAL"),
+          el("h3", { class: "label" }, "CHANNEL"),
           segment(assigned.map((n) => [n, String(n)]), binding.channel, (n) => handlers.binding(name, { channel: n })),
         ),
       );
     }
     if (action && action.id !== "none" && hasLed(name)) {
-      const leds = [["off", "Aus"], ...(action.state ? [["active", "Wenn aktiv"]] : []), ["on", "Immer an"]];
+      const leds = [["off", "Off"], ...(action.state ? [["active", "When active"]] : []), ["on", "Always on"]];
       parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "LED"), segment(leds, binding.led, (led) => handlers.binding(name, { led }))));
     }
   }
