@@ -147,7 +147,7 @@ disables a default. M/SELECT of a configured strip cannot be rebound.
 [[buttons]]
 button = "REC_1"      # Button name: REC_n, SELECT_n, MUTE_n, SOLO_n, BANK_LEFT, PLAY, UP, ...
 action = "mic_mute"
-led = "active"        # off (default), active, on
+led = "active"        # off, active, on; default: active for actions with state, else off
 
 [[buttons]]
 button = "REC_3"

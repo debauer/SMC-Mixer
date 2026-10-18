@@ -39,7 +39,7 @@ def parse_binding(row: dict[str, Any], location: str, channels: set[int]) -> Bin
             raise BindingError(f"{location}.channel: expected a configured strip channel for {action}")
     elif channel is not None:
         raise BindingError(f"{location}.channel: only valid for {', '.join(CHANNEL_ACTIONS)}")
-    led = row.get("led", "off")
+    led = row.get("led", "active" if action in STATEFUL and button in LED_BUTTONS else "off")
     if led not in LEDS:
         raise BindingError(f"{location}.led: expected one of {', '.join(LEDS)}")
     if led != "off" and button not in LED_BUTTONS:

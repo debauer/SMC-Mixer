@@ -271,3 +271,17 @@ def test_output_mute_toggles_every_sink_and_lights_led() -> None:
     assert audio.calls[-2:] == [("setmute", "speakers", False), ("setmute", "headset", False)]
     assert not controller.leds[Button.REC_4]
     assert all(call[1] != "mic" for call in audio.calls)
+
+
+def test_stateful_actions_default_to_a_state_led_unless_set_otherwise() -> None:
+    parsed = parse(
+        {
+            "buttons": [
+                {"button": "REC_1", "action": "out_mute"},
+                {"button": "REC_2", "action": "out_mute", "led": "off"},
+                {"button": "REC_3", "action": "next"},
+                {"button": "UP", "action": "mic_mute"},
+            ]
+        }
+    )
+    assert [b.led for b in parsed.buttons] == ["active", "off", "off", "off"]
