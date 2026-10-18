@@ -260,3 +260,14 @@ def test_failed_media_request_does_not_blink() -> None:
     controller, _ = started(Binding(Button.FAST_FORWARD, "next"), media=Broken())
     tap(controller, Button.FAST_FORWARD)
     assert not controller.pulses
+
+
+def test_output_mute_toggles_every_sink_and_lights_led() -> None:
+    controller, audio = started(Binding(Button.REC_4, "out_mute", led="active"))
+    tap(controller, Button.REC_4)  # headset was already muted: mute the rest
+    assert audio.calls == [("setmute", "speakers", True), ("setmute", "headset", True)]
+    assert controller.leds[Button.REC_4]
+    tap(controller, Button.REC_4)
+    assert audio.calls[-2:] == [("setmute", "speakers", False), ("setmute", "headset", False)]
+    assert not controller.leds[Button.REC_4]
+    assert all(call[1] != "mic" for call in audio.calls)

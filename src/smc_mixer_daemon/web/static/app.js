@@ -128,7 +128,7 @@ const handlers = {
       const next = { action: "none", channel: null, led: "off", ...draft.buttons[name], ...patch };
       if (next.action === "none" && !["PLAY", "STOP"].includes(name)) return void delete draft.buttons[name];
       if (next.action === "none" || !hasLed(name)) next.led = "off";
-      if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt", "play", "pause", "play_pause"].includes(next.action)) next.led = "off";
+      if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt", "out_mute", "play", "pause", "play_pause"].includes(next.action)) next.led = "off";
       draft.buttons[name] = next;
     }),
   global: (fn) => edit(fn),

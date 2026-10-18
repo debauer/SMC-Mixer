@@ -19,6 +19,10 @@ SETTLE_TRIES = 5
 SETTLE_DELAY = 0.2
 
 
+def outputs(snapshot: Snapshot) -> list[Device]:
+    return [d for d in snapshot.devices.values() if d.kind == "sink"]
+
+
 def inputs(snapshot: Snapshot) -> list[Device]:
     return [d for d in snapshot.devices.values() if d.kind == "source" and not d.monitor]
 
@@ -93,6 +97,11 @@ class Actions:
             muting = any(not d.muted for d in devices)
             for device in devices:
                 audio.mute(device, muting)
+        elif action == "out_mute":
+            devices = outputs(snapshot)
+            muting = any(not d.muted for d in devices)
+            for device in devices:
+                audio.mute(device, muting)
         elif action == "ptt":
             self.set_inputs_muted(False)
         elif action == "out_cycle":
@@ -153,6 +162,9 @@ class Actions:
             return device.muted if binding.action == "mute_ch" else snapshot.selected(device)
         if binding.action == "mic_mute":
             devices = inputs(snapshot)
+            return bool(devices) and all(d.muted for d in devices)
+        if binding.action == "out_mute":
+            devices = outputs(snapshot)
             return bool(devices) and all(d.muted for d in devices)
         if binding.action in MEDIA_STATE:
             return self.c.media_state == MEDIA_STATE[binding.action]

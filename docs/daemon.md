@@ -159,6 +159,7 @@ channel = 1
 |---|---|---|
 | `mute_ch`, `select_ch` | Same as the strip's M / SELECT for `channel` | muted / default device |
 | `mic_mute` | Mute all inputs, or unmute all if all are muted (monitor sources excluded) | all inputs muted |
+| `out_mute` | Mute all outputs, or unmute all if all are muted | all outputs muted |
 | `ptt` | Unmute all inputs while held, mute them on release | held |
 | `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
 | `play_pause`, `play`, `pause` | MPRIS on the configured player | playing / playing / paused |

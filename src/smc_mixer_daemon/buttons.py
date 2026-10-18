@@ -7,9 +7,9 @@ from smc_mixer import LED_BUTTONS, Button, strip_button
 
 CHANNEL_ACTIONS = ("mute_ch", "select_ch")
 MEDIA_ACTIONS = {"play": "play", "pause": "pause", "play_pause": "play-pause", "next": "next", "previous": "previous"}
-ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_cycle", *MEDIA_ACTIONS)
+ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_mute", "out_cycle", *MEDIA_ACTIONS)
 # Actions whose state can drive the LED.
-STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt", "play", "pause", "play_pause"})
+STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt", "out_mute", "play", "pause", "play_pause"})
 LEDS = ("off", "active", "on")
 
 

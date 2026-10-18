@@ -26,6 +26,7 @@ export const ACTIONS = [
   { id: "mute_ch", label: "Kanal stumm", hint: "Ziel eines Kanals", channel: true, state: true },
   { id: "select_ch", label: "Kanal wählen", hint: "Gerät als Standard", channel: true, state: true },
   { id: "mic_mute", label: "Mikro stumm", hint: "alle Eingänge", state: true },
+  { id: "out_mute", label: "Ausgänge stumm", hint: "alle Ausgänge", state: true },
   { id: "ptt", label: "Push-to-Talk", hint: "Mikro nur beim Halten", state: true },
   { id: "out_cycle", label: "Ausgang wechseln", hint: "Ausgangs-Kanäle rotieren" },
   { id: "play_pause", label: "Play / Pause", hint: "MPRIS umschalten", state: true },
