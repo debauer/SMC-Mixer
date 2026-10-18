@@ -4,6 +4,7 @@ import logging
 import threading
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from itertools import islice
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from smc_mixer_daemon.controller import Controller
 from smc_mixer_daemon.inbox import Inbox
 from smc_mixer_daemon.media import Media
 from smc_mixer_daemon.mqtt import Mqtt
+from smc_mixer_daemon.mqtt_config import MqttConfig
 from smc_mixer_daemon.status import Board, BoardHandler, describe
 from smc_mixer_daemon.subscription import Subscription
 from smc_mixer_daemon.takeover import percent
@@ -138,7 +140,7 @@ def control_loop(
             elif mqtt:
                 mqtt.commands()  # nobody to execute them; stale commands must not pile up or fire later
             if tick >= next_publish:
-                board.publish(describe(mixer, controller, config))
+                board.publish(describe(mixer, controller, config, mqtt))
                 if mqtt:
                     mqtt.channels(config.strips, controller.snapshot if controller and controller.ready else None)
                 next_publish = tick + 0.2
@@ -152,15 +154,27 @@ def control_loop(
                 mixer.close()
 
 
+def sync_mqtt(current: Mqtt | None, config: MqttConfig) -> Mqtt | None:
+    """Bring the client in line with the configuration: reconnect when broker settings changed."""
+    if current and replace(current.config, ignore=()) == replace(config, ignore=()):
+        current.configure(config)
+        return current
+    if current:
+        current.close()
+    if not config.enabled:
+        return None
+    client = Mqtt(config)
+    client.start()
+    return client
+
+
 def run(config_path: Path, config: Config, stop: threading.Event) -> None:
     board = Board(config)
     handler = BoardHandler(board)
     logging.getLogger("smc_mixer_daemon").addHandler(handler)
     subscription = Subscription()
     subscription.start()
-    mqtt = Mqtt(config.mqtt) if config.mqtt.enabled else None
-    if mqtt:
-        mqtt.start()
+    mqtt = sync_mqtt(None, config.mqtt)
     web = None
     if config.web.enabled:
         token_file = config_path.parent / "web-token"
@@ -170,8 +184,11 @@ def run(config_path: Path, config: Config, stop: threading.Event) -> None:
         while not stop.is_set():
             board.reload.clear()
             board.config = config
-            if mqtt:
-                mqtt.configure(config.mqtt)
+            try:
+                mqtt = sync_mqtt(mqtt, config.mqtt)
+            except ConfigError as exc:
+                mqtt = None
+                log.error("MQTT not started: %s", exc)
             control_loop(config, stop, subscription, board, mqtt)
             if board.reload.is_set() and not stop.is_set():
                 try:

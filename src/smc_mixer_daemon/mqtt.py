@@ -69,6 +69,7 @@ class Mqtt:
         self.config = config
         self.ignore = frozenset(config.ignore)
         self.connected = False
+        self.error = ""  # why the last connection attempt failed, for the web interface
         self.sent: dict[str, str] = {}
         self.incoming: queue.SimpleQueue[Command] = queue.SimpleQueue()
         self.client = factory(config)
@@ -84,6 +85,7 @@ class Mqtt:
             client.tls_set()
         client.will_set(self.topic("status"), "offline", retain=True)
         client.on_connect, client.on_disconnect = self.on_connect, self.on_disconnect
+        client.on_connect_fail = self.on_connect_fail
         client.on_message = self.on_message
         client.reconnect_delay_set(1, 30)
         client.connect_async(config.host, config.port)
@@ -95,9 +97,11 @@ class Mqtt:
 
     def on_connect(self, client: Any, userdata: Any, flags: Any, reason: Any, properties: Any = None) -> None:
         if reason.is_failure:
+            self.error = f"refused: {reason}"
             log.warning("MQTT connection refused: %s", reason)
             return
         self.connected = True
+        self.error = ""
         self.sent.clear()  # retained state is republished after a reconnect
         log.info("MQTT connected to %s:%s, topics below %s/", self.config.host, self.config.port, self.config.prefix)
         client.publish(self.topic("status"), "online", retain=True)
@@ -106,8 +110,14 @@ class Mqtt:
 
     def on_disconnect(self, client: Any, userdata: Any, flags: Any, reason: Any, properties: Any = None) -> None:
         if self.connected:
+            self.error = "connection lost"
             log.warning("MQTT disconnected: %s", reason)
         self.connected = False
+
+    def on_connect_fail(self, client: Any, userdata: Any) -> None:
+        if not self.error:
+            log.warning("MQTT broker %s:%s is unreachable; retrying", self.config.host, self.config.port)
+        self.error = "broker unreachable"
 
     def on_message(self, client: Any, userdata: Any, message: Any) -> None:
         command = parse_command(self.config.prefix, message.topic, bytes(message.payload))

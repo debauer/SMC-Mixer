@@ -125,7 +125,7 @@ h2.label.source { color: var(--source); }
 .check span { display: flex; flex-direction: column; gap: 2px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 textarea.code { padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 6px; background: #050608; color: var(--warn); font: 12px/1.5 var(--mono); resize: vertical; }
-input[type="text"], input[type="password"], select { padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 6px; background: #07080c; }
+input[type="text"], input[type="password"], input[type="number"], select { padding: 9px 11px; border: 1px solid var(--line-strong); border-radius: 6px; background: #07080c; }
 
 .key-grid.transport { display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
 .key { display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 52px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: #0d0f16; text-align: left; }
@@ -155,3 +155,7 @@ input[type="text"], input[type="password"], select { padding: 9px 11px; border: 
   .actions-grid { grid-template-columns: 1fr; }
   .editor { max-width: none; flex-basis: 100%; }
 }
+
+.layout[hidden] { display: none; }
+.ellipsis { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings { width: min(560px, 100%); }

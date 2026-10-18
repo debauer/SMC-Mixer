@@ -1,4 +1,4 @@
-"""Access token that guards changes to shell commands made over HTTP."""
+"""Access token that guards security-relevant changes (shell commands, MQTT broker) made over HTTP."""
 
 import hmac
 import os
@@ -26,4 +26,4 @@ def ensure_token(path: Path) -> str:
 
 def check(expected: str, given: str | None) -> None:
     if not given or not hmac.compare_digest(expected.encode(), given.encode()):
-        raise AuthError("changing shell commands needs the access token")
+        raise AuthError("this change needs the access token")

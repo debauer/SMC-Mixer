@@ -9,6 +9,7 @@ from typing import Any
 from smc_mixer import SmcMixer
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.controller import Controller
+from smc_mixer_daemon.mqtt import Mqtt
 
 
 class Board:
@@ -79,7 +80,9 @@ class BoardHandler(logging.Handler):
         self.board.note(record.levelname.lower(), record.getMessage())
 
 
-def describe(mixer: SmcMixer | None, controller: Controller | None, config: Config) -> dict[str, Any]:
+def describe(
+    mixer: SmcMixer | None, controller: Controller | None, config: Config, mqtt: Mqtt | None = None
+) -> dict[str, Any]:
     """Snapshot of mixer and strip state; reads attributes only, never talks to the hardware."""
     connected = bool(mixer and mixer.connected)
     mode = mixer.mode.value if mixer and mixer.mode else None
@@ -115,4 +118,9 @@ def describe(mixer: SmcMixer | None, controller: Controller | None, config: Conf
         "leds": {button.name: on for button, on in controller.leds.items()} if controller else {},
         "media": {"player": config.player, "state": controller.media_state if controller else None},
         "soft_takeover": config.soft_takeover,
+        "mqtt": {
+            "enabled": config.mqtt.enabled,
+            "connected": bool(mqtt and mqtt.connected),
+            "error": mqtt.error if mqtt else ("client not running, see the log" if config.mqtt.enabled else ""),
+        },
     }

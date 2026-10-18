@@ -1,6 +1,7 @@
 """JSON endpoints of the web interface; transport-independent so they can be tested directly."""
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -9,12 +10,18 @@ from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.media import Media
+from smc_mixer_daemon.mqtt_config import MqttConfig
 from smc_mixer_daemon.status import Board
 from smc_mixer_daemon.web.auth import AuthError, check
 
 
 def commands(config: Config) -> set[tuple[str, str | None, str | None]]:
     return {(b.button.name, b.command, b.release_command) for b in config.buttons if b.action == "shell"}
+
+
+def broker(config: Config) -> MqttConfig:
+    """Everything of the MQTT table except the ignore list, which anyone may edit."""
+    return replace(config.mqtt, ignore=())
 
 
 class NotFoundError(LookupError):
@@ -54,9 +61,9 @@ class Api:
             raise NotFoundError(path)
         running = self.running()
         config = config_store.from_json(data, running)
-        if commands(config) != commands(running):
+        if commands(config) != commands(running) or broker(config) != broker(running):
             if self.token is None:
-                raise AuthError("shell commands cannot be changed over HTTP: no access token configured")
+                raise AuthError("shell commands and MQTT settings cannot be changed over HTTP: no access token")
             check(self.token, token)
         config_store.save(self.config_path, config)
         self.board.config = config
@@ -68,7 +75,15 @@ class Api:
         return {
             "token_file": str(self.token_file) if self.token_file else None,
             "soft_takeover": config.soft_takeover,
-            "mqtt": {"enabled": config.mqtt.enabled, "prefix": config.mqtt.prefix},
+            "mqtt": {
+                "enabled": config.mqtt.enabled,
+                "host": config.mqtt.host,
+                "port": config.mqtt.port,
+                "username": config.mqtt.username,
+                "password_set": config.mqtt.password is not None,  # the password itself is never sent
+                "tls": config.mqtt.tls,
+                "prefix": config.mqtt.prefix,
+            },
             "mqtt_ignore": list(config.mqtt.ignore),
             "player": config.player,
             "strips": [{"channel": s.channel, "kind": s.kind, "name": s.name, "label": s.label} for s in config.strips],

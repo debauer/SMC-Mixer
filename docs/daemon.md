@@ -217,7 +217,7 @@ release_command = "true"   # optional
 Anything that can write `config.toml` can already run code as you. The web interface is
 another way to write it, so changing shell commands over HTTP needs an access token: the
 daemon creates `web-token` (mode 0600) next to `config.toml` and the page asks for its
-contents once per browser session (it is never sent to the page). Other settings need no
+contents once per browser session (it is never sent to the page). Other settings (except the MQTT broker, see [MQTT](#mqtt)) need no
 token, and unchanged commands are kept without one. Changes to commands are made over HTTP
 only with that token, so other local users and web pages cannot add commands.
 
@@ -241,11 +241,15 @@ prefix = "smc"       # all topics start with this, no wildcards or edge slashes
 ignore = ["KNOB_8"]  # inputs that are neither published nor controlled
 ```
 
-Broker settings are read at startup. `ignore` takes effect when the configuration is reloaded;
-it holds button names (`REC_1`, `BANK_LEFT`, ...), `KNOB_1`-`KNOB_8` and `FADER_1`-`FADER_8`.
-`FADER_n` also covers the channel topics of strip `n`. The web interface edits only `ignore`: with MQTT
-enabled, every key, encoder and channel editor has an *MQTT* switch showing its topic.
-The web interface never shows the password and cannot change the broker settings.
+The **Settings** page of the web interface edits these broker settings too (host, port, TLS, login,
+prefix); **Save** applies them without restarting the daemon, reconnecting if they changed. The header shows
+the connection as an *MQTT* pill: `off`, `connecting`, `connected`, or the reason a connection failed.
+Because redirecting the data to another broker is as sensitive as a shell command, changing broker settings
+over HTTP needs the same access token (see [Shell commands](#shell-commands)); the `ignore` list does not.
+The password is never sent to the page: leave the field empty to keep it, type one to replace it, or tick
+*Remove the stored password*. `ignore` holds button names (`REC_1`, `BANK_LEFT`, ...), `KNOB_1`-`KNOB_8` and
+`FADER_1`-`FADER_8`; `FADER_n` also covers the channel topics of strip `n`. With MQTT enabled, every key,
+encoder and channel editor has an *MQTT* switch showing its topic.
 
 | Topic below `<prefix>/` | Payload | Direction |
 |---|---|---|

@@ -60,6 +60,22 @@ def render(config: Config) -> str:
     return "\n".join(lines)
 
 
+def broker_from_json(data: Any, current: MqttConfig) -> MqttConfig:
+    """Broker settings from the settings page; an absent password keeps the stored one, null removes it."""
+    keys = {"enabled", "host", "port", "username", "tls", "prefix", "password"}
+    if not isinstance(data, dict) or data.keys() - keys:
+        raise ConfigError("mqtt: expected an object with " + ", ".join(sorted(keys)))
+    row = {key: value for key, value in data.items() if key != "password"}
+    if "password" not in data:
+        row["password"] = current.password
+    elif data["password"] is not None:
+        row["password"] = data["password"]
+    try:
+        return parse_mqtt({**row, "ignore": list(current.ignore)})
+    except MqttConfigError as exc:
+        raise ConfigError(str(exc)) from exc
+
+
 def from_json(data: Any, current: Config) -> Config:
     """Validate an edited configuration; only the MQTT ignore list is editable, never web or broker settings."""
     if not isinstance(data, dict):
@@ -72,12 +88,13 @@ def from_json(data: Any, current: Config) -> Config:
     if data.get("player") is not None:
         raw["media"] = {"player": data["player"]}
     ignore = data.get("mqtt_ignore", list(current.mqtt.ignore))
-    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons", "knobs", "mqtt_ignore"}
+    broker = broker_from_json(data["mqtt"], current.mqtt) if "mqtt" in data else current.mqtt
+    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons", "knobs", "mqtt_ignore", "mqtt"}
     if unknown:
         raise ConfigError(f"configuration: unknown keys: {', '.join(sorted(unknown))}")
     parsed = parse(raw)
     try:
-        mqtt = replace(current.mqtt, ignore=parse_mqtt({"ignore": ignore}).ignore)
+        mqtt = replace(broker, ignore=parse_mqtt({"ignore": ignore}).ignore)
     except MqttConfigError as exc:
         raise ConfigError(str(exc)) from exc
     return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons, parsed.knobs, mqtt)

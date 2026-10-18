@@ -2,6 +2,8 @@ import { createButtons, hasLed } from "./buttons.js";
 import { createKnobs } from "./knobs.js";
 import { el } from "./dom.js";
 import { renderEditor } from "./editor.js";
+import { clone, fromConfig, payload } from "./model.js";
+import { mqttStatusText, renderSettings } from "./settings.js";
 import { createStrips } from "./strips.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,7 +14,7 @@ const model = {
   devices: { devices: [], players: [], player_error: null },
   selected: { kind: "strip", id: 1 },
   offline: false,
-  mqtt: { enabled: false, prefix: "smc" },
+  page: "main",
   token: "",
   tokenFile: null,
 };
@@ -40,45 +42,7 @@ async function request(path, options) {
   return body;
 }
 
-const fromConfig = (config) => ({
-  soft_takeover: config.soft_takeover,
-  player: config.player,
-  mqtt_ignore: config.mqtt_ignore,
-  strips: Array.from({ length: 8 }, (_, i) => {
-    const row = config.strips.find((strip) => strip.channel === i + 1);
-    return row ? { kind: row.kind, name: row.name, label: row.label || "" } : null;
-  }),
-  knobs: Object.fromEntries(config.knobs.map((k) => [k.knob, { action: k.action, channel: k.channel, step: k.step }])),
-  buttons: Object.fromEntries(
-    config.buttons.map((b) => [
-      b.button,
-      { action: b.action, channel: b.channel, led: b.led, command: b.command, release_command: b.release_command },
-    ]),
-  ),
-});
-
-const payload = (draft) => ({
-  soft_takeover: draft.soft_takeover,
-  player: draft.player,
-  mqtt_ignore: [...draft.mqtt_ignore].sort(),
-  strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name, label: slot.label.trim() || null }] : [])),
-  knobs: Object.entries(draft.knobs)
-    .sort(([a], [b]) => a - b)
-    .map(([knob, k]) => ({ knob: Number(knob), action: k.action, channel: k.channel, step: k.step })),
-  buttons: Object.entries(draft.buttons)
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([button, b]) => ({
-      button,
-      action: b.action,
-      channel: b.channel,
-      led: b.led,
-      command: b.action === "shell" ? b.command || "" : null,
-      release_command: b.action === "shell" && (b.release_command || "").trim() ? b.release_command : null,
-    })),
-});
-
 const isDirty = () => JSON.stringify(payload(model.draft)) !== JSON.stringify(payload(model.saved));
-const clone = (value) => JSON.parse(JSON.stringify(value));
 
 let updateStrips = null;
 let updateButtons = null;
@@ -102,6 +66,15 @@ function renderHeader() {
   $("dirty").hidden = !dirty;
   $("save").disabled = !dirty;
   $("discard").disabled = !dirty;
+}
+
+function renderMqtt() {
+  const status = mqttStatusText(model.status.mqtt);
+  $("mqtt-dot").className = `dot${status.ok ? " ok" : ""}`;
+  $("mqtt-text").textContent = status.text;
+  $("mqtt-pill").title = status.text;
+  const detail = $("mqtt-detail");
+  if (detail) detail.textContent = `Status: ${status.text}`;
 }
 
 const PLAYBACK = { Playing: "playing", Paused: "paused", Stopped: "stopped" };
@@ -128,12 +101,19 @@ function renderLive() {
   updateKnobs(model);
   renderHeader();
   renderMedia();
+  renderMqtt();
   renderLog();
 }
 
 function renderAll() {
   renderLive();
-  if (model.draft) renderEditor($("editor"), model, handlers);
+  if (!model.draft) return;
+  const settings = model.page === "settings";
+  $("main").hidden = settings;
+  $("settings-page").hidden = !settings;
+  $("settings-button").setAttribute("aria-pressed", String(settings));
+  if (settings) renderSettings($("settings"), model, handlers);
+  else renderEditor($("editor"), model, handlers);
 }
 
 const edit = (fn) => {
@@ -196,6 +176,12 @@ const handlers = {
       const rest = draft.mqtt_ignore.filter((item) => item !== id);
       draft.mqtt_ignore = on ? rest : [...rest, id];
     }),
+  mqttSettings: (patch, rebuild) => {
+    // Typing must not rebuild the page (focus), so only the draft and the header update.
+    Object.assign(model.draft.mqtt, patch);
+    if (rebuild) renderAll();
+    else renderLive();
+  },
   global: (fn) => edit(fn),
 };
 
@@ -248,6 +234,10 @@ async function start() {
     renderAll();
   });
   $("save").addEventListener("click", save);
+  $("settings-button").addEventListener("click", () => {
+    model.page = model.page === "settings" ? "main" : "settings";
+    renderAll();
+  });
   $("discard").addEventListener("click", () => {
     model.draft = clone(model.saved);
     banner("");
@@ -256,7 +246,6 @@ async function start() {
   try {
     const config = await request("/api/config");
     model.tokenFile = config.token_file;
-    model.mqtt = config.mqtt;
     model.token = loadToken();
     model.saved = fromConfig(config);
     model.draft = clone(model.saved);

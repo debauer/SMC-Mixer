@@ -12,7 +12,9 @@
   <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>SMC<span class="slash">/</span>CTRL</h1>
   <div class="pill" id="device-pill"><span class="dot" id="device-dot"></span><span>M-VAVE SMC-Mixer</span><span class="mono muted" id="device-text">waiting</span></div>
   <div class="pill" id="mode-pill"><span class="label">MODE</span><span class="mono" id="mode-text">-</span><span class="muted small" id="control-text"></span></div>
+  <div class="pill" id="mqtt-pill"><span class="dot" id="mqtt-dot"></span><span>MQTT</span><span class="mono muted ellipsis" id="mqtt-text">off</span></div>
   <div class="spacer"></div>
+  <button type="button" class="btn" id="settings-button" aria-pressed="false">Settings</button>
   <span class="mono dirty" id="dirty" hidden>&#9679; unsaved</span>
   <div class="actions">
     <button type="button" class="btn" id="discard" disabled>Discard</button>
@@ -20,7 +22,7 @@
   </div>
 </header>
 <p class="banner" id="banner" role="status" hidden></p>
-<main class="layout">
+<main class="layout" id="main">
   <div class="column">
     <section class="panel" aria-labelledby="knobs-title">
       <div class="panel-head"><h2 class="label" id="knobs-title">ENCODER</h2>
@@ -46,6 +48,9 @@
     </section>
   </div>
   <aside class="panel editor" id="editor" aria-label="Settings"></aside>
+</main>
+<main class="layout" id="settings-page" hidden>
+  <section class="panel editor settings" id="settings" aria-label="Settings"></section>
 </main>
 <script type="module" src="app.js"></script>
 </body>
