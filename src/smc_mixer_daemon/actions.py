@@ -33,6 +33,7 @@ class Actions:
     def __init__(self, controller: "Controller") -> None:
         self.c = controller
         self.remembered: dict[str, set[str]] = {}
+        self.talking: dict[Button, set[str]] = {}  # inputs that were muted when push-to-talk was pressed
 
     def device(self, channel: int | None) -> Device | None:
         strip = next((row for row in self.c.config.strips if row.channel == channel), None)
@@ -103,7 +104,11 @@ class Actions:
         elif action == "out_mute":
             self.toggle_all("sink", outputs(snapshot))
         elif action == "ptt":
-            self.set_inputs_muted(False)
+            muted = {d.name for d in inputs(snapshot) if d.muted}
+            self.talking[binding.button] = muted
+            for device in inputs(snapshot):
+                if device.name in muted:
+                    audio.mute(device, False)
         elif action == "out_cycle":
             self.cycle_output()
 
@@ -147,16 +152,15 @@ class Actions:
             return
         if binding.action != "ptt" or not self.c.ready:
             return
+        was_muted = self.talking.pop(binding.button, set())
         self.c.refresh()
         try:
-            self.set_inputs_muted(True)
+            # Only inputs that were muted before the press go back to muted.
+            for device in inputs(self.c.snapshot) if self.c.snapshot else []:
+                if device.name in was_muted:
+                    self.c.audio.mute(device, True)
         finally:
             self.c.refresh()
-
-    def set_inputs_muted(self, muted: bool) -> None:
-        if self.c.snapshot:
-            for device in inputs(self.c.snapshot):
-                self.c.audio.mute(device, muted)
 
     def cycle_output(self) -> None:
         snapshot = self.c.snapshot

@@ -52,14 +52,27 @@ def test_mic_mute_toggles_all_real_inputs_and_lights_led() -> None:
     assert all(call[1] != "mon" for call in audio.calls)
 
 
-def test_push_to_talk_unmutes_while_held_only() -> None:
+def test_push_to_talk_only_remutes_inputs_that_were_muted_before() -> None:
     controller, audio = started(Binding(Button.REC_2, "ptt", led="active"))
+    audio.devices["source", "mic"] = replace(audio.devices["source", "mic"], muted=True)
+    audio.devices["source", "mic2"] = Device("source", "mic2", 4, "Mic 2", False, 40)
+    controller.refresh()
     controller.event(ButtonEvent(Button.REC_2, True, Layer.DAW))
     assert audio.calls == [("setmute", "mic", False)] and controller.leds[Button.REC_2]
     controller.event(ButtonEvent(Button.REC_2, True, Layer.DAW))
     assert len(audio.calls) == 1
     controller.event(ButtonEvent(Button.REC_2, False, Layer.DAW))
     assert audio.calls[-1] == ("setmute", "mic", True) and not controller.leds[Button.REC_2]
+    assert audio.devices["source", "mic2"].muted is False
+    assert [c for c in audio.calls if c[1] == "mic2"] == []
+
+
+def test_push_to_talk_on_unmuted_inputs_changes_nothing_and_release_without_press_is_ignored() -> None:
+    controller, audio = started(Binding(Button.REC_2, "ptt"))
+    tap(controller, Button.REC_2)
+    assert audio.calls == []
+    controller.event(ButtonEvent(Button.REC_2, False, Layer.DAW))
+    assert audio.calls == []
 
 
 def test_output_cycle_rotates_configured_sinks_only() -> None:
