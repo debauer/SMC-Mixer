@@ -13,10 +13,10 @@ from smc_mixer import (
     MidiProtocol,
     SmcMixer,
     SmcMixerError,
-    strip_button,
 )
+from smc_mixer_daemon.actions import Actions
 from smc_mixer_daemon.audio import Audio, Device, Snapshot
-from smc_mixer_daemon.commands import BackendError
+from smc_mixer_daemon.buttons import effective
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.media import Media
 from smc_mixer_daemon.takeover import Takeover, percent
@@ -43,6 +43,8 @@ class Controller:
         self.held: set[Button] = set()
         self.leds: dict[Button, bool] = {}
         self.blinks: dict[int, bool] = {}
+        self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
+        self.actions = Actions(self)
 
     @property
     def ready(self) -> bool:
@@ -137,35 +139,17 @@ class Controller:
                     self.write(device, state, value)
                 self.feedback()
             return
+        binding = self.bindings.get(event.button)
         if not event.pressed:
             self.held.discard(event.button)
+            if binding:
+                self.actions.release(binding)
             return
         if event.button in self.held:
             return
         self.held.add(event.button)
-        if event.button in (Button.PLAY, Button.STOP):
-            if self.media:
-                try:
-                    self.media.control("play" if event.button == Button.PLAY else "pause", lambda: self.ready)
-                except BackendError as exc:
-                    log.warning("media request failed: %s", exc)
-            return
-        for strip in self.config.strips:
-            if event.button not in (strip_button("MUTE", strip.channel), strip_button("SOLO", strip.channel)):
-                continue
-            # Selection needs current topology, not an index retained across device changes.
-            self.refresh()
-            device = self.snapshot.devices.get((strip.kind, strip.name)) if self.snapshot else None
-            if device is None or not self.ready:
-                return
-            try:
-                if event.button == strip_button("MUTE", strip.channel):
-                    self.audio.toggle_mute(device)
-                else:
-                    self.audio.select(device, lambda: self.ready)
-            finally:
-                self.refresh()
-            return
+        if binding:
+            self.actions.press(binding)
 
     def feedback(self) -> None:
         if not self.mixer.connected:
@@ -173,12 +157,9 @@ class Controller:
             self.blinks.clear()
             return
         wanted = dict.fromkeys(LED_BUTTONS, False)
-        if self.ready and self.snapshot:
-            for strip in self.config.strips:
-                device = self.snapshot.devices.get((strip.kind, strip.name))
-                if device:
-                    wanted[strip_button("MUTE", strip.channel)] = device.muted
-                    wanted[strip_button("SOLO", strip.channel)] = self.snapshot.selected(device)
+        for button, binding in self.bindings.items():
+            if button in LED_BUTTONS:
+                wanted[button] = self.actions.lit(binding)
         for button, on in wanted.items():
             if self.leds.get(button) != on:
                 self.mixer.set_led(button, on)

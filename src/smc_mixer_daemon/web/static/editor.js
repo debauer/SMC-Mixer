@@ -1,3 +1,4 @@
+import { renderButtonEditor } from "./button_editor.js";
 import { el, KIND, pad } from "./dom.js";
 
 const segment = (options, current, pick) =>
@@ -37,7 +38,7 @@ function targets({ draft, devices, selected }, slot, change) {
   );
 }
 
-function general({ draft, devices }, update) {
+export function general({ draft, devices }, update) {
   const players = [...devices.players];
   if (draft.player && !players.includes(draft.player)) players.unshift(draft.player);
   const select = el(
@@ -62,7 +63,9 @@ function general({ draft, devices }, update) {
 }
 
 export function renderEditor(container, model, handlers) {
-  const { draft, selected, devices } = model;
+  if (model.selected.kind === "button") return renderButtonEditor(container, model, handlers, general);
+  const { draft, devices } = model;
+  const selected = model.selected.id;
   const slot = draft.strips[selected - 1];
   const kind = slot ? KIND[slot.kind] : null;
   const device = slot && devices.devices.find((row) => row.kind === slot.kind && row.name === slot.name);

@@ -41,8 +41,8 @@ export function createStrips(container, onSelect) {
       const same = strip && slot && strip.kind === slot.kind && strip.name === slot.name;
       const device = same && strip.available ? strip : null;
       const level = device ? device.volume : raw == null ? 0 : percent(raw);
-      card.className = `strip ${kind ? kind.cls : "free"}${selected === channel ? " selected" : ""}${kind && !device ? " offline" : ""}`;
-      card.setAttribute("aria-pressed", String(selected === channel));
+      card.className = `strip ${kind ? kind.cls : "free"}${(selected.kind === "strip" && selected.id === channel) ? " selected" : ""}${kind && !device ? " offline" : ""}`;
+      card.setAttribute("aria-pressed", String((selected.kind === "strip" && selected.id === channel)));
       card.setAttribute("aria-label", `Kanal ${channel}: ${slot && slot.name ? slot.name : "frei"}`);
       parts.fill.style.height = `${kind ? Math.min(100, level) : 0}%`;
       parts.cap.style.bottom = `calc(${raw == null ? level : percent(raw)}% - 8px)`;

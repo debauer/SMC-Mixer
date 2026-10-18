@@ -1,3 +1,4 @@
+import { createButtons, hasLed } from "./buttons.js";
 import { el } from "./dom.js";
 import { renderEditor } from "./editor.js";
 import { createStrips } from "./strips.js";
@@ -8,7 +9,7 @@ const model = {
   saved: null,
   draft: null,
   devices: { devices: [], players: [], player_error: null },
-  selected: 1,
+  selected: { kind: "strip", id: 1 },
   offline: false,
 };
 
@@ -26,18 +27,23 @@ const fromConfig = (config) => ({
     const row = config.strips.find((strip) => strip.channel === i + 1);
     return row ? { kind: row.kind, name: row.name } : null;
   }),
+  buttons: Object.fromEntries(config.buttons.map((b) => [b.button, { action: b.action, channel: b.channel, led: b.led }])),
 });
 
 const payload = (draft) => ({
   soft_takeover: draft.soft_takeover,
   player: draft.player,
   strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name }] : [])),
+  buttons: Object.entries(draft.buttons)
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([button, b]) => ({ button, action: b.action, channel: b.channel, led: b.led })),
 });
 
 const isDirty = () => JSON.stringify(payload(model.draft)) !== JSON.stringify(payload(model.saved));
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
 let updateStrips = null;
+let updateButtons = null;
 let loggedKey = "";
 
 function banner(text) {
@@ -71,6 +77,7 @@ function renderLog() {
 function renderLive() {
   if (!model.draft) return;
   updateStrips(model);
+  updateButtons(model);
   renderHeader();
   renderLog();
 }
@@ -85,12 +92,27 @@ const edit = (fn) => {
   renderAll();
 };
 
+const stripButtons = (channel) => [`MUTE_${channel}`, `SOLO_${channel}`];
+
 const handlers = {
   strip: (channel, fn) => edit((draft) => fn(draft.strips[channel - 1])),
   kind: (channel, kind) =>
     edit((draft) => {
       const slot = draft.strips[channel - 1];
       draft.strips[channel - 1] = kind ? { kind, name: slot && slot.kind === kind ? slot.name : "" } : null;
+      // Bindings on a strip's own M/S keys conflict while it is assigned; actions on a freed channel dangle.
+      if (draft.strips[channel - 1] && draft.strips[channel - 1].name) for (const key of stripButtons(channel)) delete draft.buttons[key];
+      if (!draft.strips[channel - 1] || !draft.strips[channel - 1].name) {
+        for (const [key, b] of Object.entries(draft.buttons)) if (b.channel === channel) delete draft.buttons[key];
+      }
+    }),
+  binding: (name, patch) =>
+    edit((draft) => {
+      const next = { action: "none", channel: null, led: "off", ...draft.buttons[name], ...patch };
+      if (next.action === "none" && !["PLAY", "STOP"].includes(name)) return void delete draft.buttons[name];
+      if (next.action === "none" || !hasLed(name)) next.led = "off";
+      if (next.led === "active" && !["mute_ch", "solo_ch", "mic_mute", "ptt"].includes(next.action)) next.led = "off";
+      draft.buttons[name] = next;
     }),
   global: (fn) => edit(fn),
 };
@@ -130,7 +152,11 @@ async function save() {
 
 async function start() {
   updateStrips = createStrips($("strips"), (channel) => {
-    model.selected = channel;
+    model.selected = { kind: "strip", id: channel };
+    renderAll();
+  });
+  updateButtons = createButtons($("buttons"), (name) => {
+    model.selected = { kind: "button", id: name };
     renderAll();
   });
   $("save").addEventListener("click", save);

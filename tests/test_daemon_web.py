@@ -199,3 +199,19 @@ def test_http_error_is_reported_when_audio_backend_fails(tmp_path: Path) -> None
         instance.server_close()
     with pytest.raises(urllib.error.URLError):
         urllib.request.urlopen(f"http://127.0.0.1:{instance.server_address[1]}/", timeout=1)
+
+
+def test_buttons_are_saved_through_the_api(web: tuple[int, Board, Path]) -> None:
+    port, board, path = web
+    body = {
+        "soft_takeover": False,
+        "player": "firefox",
+        "strips": [{"channel": 1, "kind": "sink", "name": "speakers"}],
+        "buttons": [{"button": "REC_1", "action": "mic_mute", "channel": None, "led": "active"}],
+    }
+    status, saved = call(port, "PUT", "/api/config", body)
+    assert status == 200 and saved["buttons"] == body["buttons"]
+    assert load(path).buttons[0].action == "mic_mute" and board.reload.is_set()
+    body["buttons"] = [{"button": "MUTE_1", "action": "mic_mute", "channel": None, "led": "off"}]
+    status, error = call(port, "PUT", "/api/config", body)
+    assert status == 400 and "belong to configured strips" in error["error"]

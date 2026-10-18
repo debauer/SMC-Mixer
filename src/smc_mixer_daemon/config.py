@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from smc_mixer_daemon.buttons import Binding, BindingError, parse_binding, strip_buttons
+
 
 class ConfigError(ValueError):
     """Invalid daemon configuration."""
@@ -31,6 +33,7 @@ class Config:
     soft_takeover: bool = False
     player: str | None = None
     web: WebConfig = field(default_factory=WebConfig)
+    buttons: tuple[Binding, ...] = ()
 
 
 def default_path() -> Path:
@@ -75,7 +78,7 @@ def parse_web(value: Any) -> WebConfig:
 
 
 def parse(raw: dict[str, Any]) -> Config:
-    table(raw, {"daemon", "media", "strips", "web"}, "configuration")
+    table(raw, {"daemon", "media", "strips", "web", "buttons"}, "configuration")
     daemon = table(raw.get("daemon", {}), {"soft_takeover"}, "daemon")
     soft = daemon.get("soft_takeover", False)
     if type(soft) is not bool:
@@ -103,7 +106,27 @@ def parse(raw: dict[str, Any]) -> Config:
         raise ConfigError("strips: duplicate channel")
     if len({(strip.kind, strip.name) for strip in strips}) != len(strips):
         raise ConfigError("strips: duplicate device assignment")
-    if not strips and player is None:
-        raise ConfigError("configure at least one strip or a media player")
+    buttons = parse_buttons(raw.get("buttons", []), strips)
+    if not strips and player is None and not buttons:
+        raise ConfigError("configure at least one strip, button or media player")
     web = parse_web(raw["web"]) if "web" in raw else WebConfig()
-    return Config(tuple(strips), soft, player, web)
+    return Config(tuple(strips), soft, player, web, buttons)
+
+
+def parse_buttons(entries: Any, strips: list[Strip]) -> tuple[Binding, ...]:
+    if not isinstance(entries, list):
+        raise ConfigError("buttons: expected [[buttons]] tables")
+    channels = {strip.channel for strip in strips}
+    bindings: list[Binding] = []
+    for index, entry in enumerate(entries):
+        row = table(entry, {"button", "action", "channel", "led"}, f"buttons[{index}]")
+        try:
+            bindings.append(parse_binding(row, f"buttons[{index}]", channels))
+        except BindingError as exc:
+            raise ConfigError(str(exc)) from exc
+    if len({binding.button for binding in bindings}) != len(bindings):
+        raise ConfigError("buttons: duplicate button")
+    if taken := {binding.button for binding in bindings} & strip_buttons(channels):
+        names = ", ".join(sorted(button.name for button in taken))
+        raise ConfigError(f"buttons: {names} belong to configured strips; free the channel first")
+    return tuple(bindings)

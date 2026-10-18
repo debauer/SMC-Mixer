@@ -28,3 +28,9 @@ name = "REPLACE_WITH_HEADSET_SINK_NAME"
 channel = 3
 kind = "source"
 name = "REPLACE_WITH_MICROPHONE_SOURCE_NAME"
+
+# Optional button bindings; see docs/daemon.md.
+# [[buttons]]
+# button = "REC_1"
+# action = "mic_mute"
+# led = "active"

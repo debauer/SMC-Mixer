@@ -95,6 +95,9 @@ class Audio:
     def toggle_mute(self, device: Device) -> None:
         self.run(["pactl", f"set-{device.kind}-mute", device.name, "toggle"])
 
+    def mute(self, device: Device, muted: bool) -> None:
+        self.run(["pactl", f"set-{device.kind}-mute", device.name, "1" if muted else "0"])
+
     def playback(self) -> list[tuple[int, int]]:
         try:
             return [(integer(row["index"]), integer(row["sink"])) for row in self.objects("sink-inputs")]

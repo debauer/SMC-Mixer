@@ -87,10 +87,11 @@ who can reach it can edit the configuration; the daemon logs a warning.
 | S LED | Device is the current default of its kind (input/output independently) |
 | Play | Play/resume the configured MPRIS player |
 | Physical Pause (MCU STOP) | Pause the configured MPRIS player |
-| R, SELECT, other transport/navigation controls, knobs | Unassigned |
+| All other buttons (R, SELECT, Bank, transport, navigation, M/S of unassigned strips) | Unassigned until bound, see below |
+| Knobs | Unassigned |
 
-Buttons act once per press, not again on release. Fader changes do not unmute.
-Changes made through desktop controls update M/S LEDs. Other button LEDs are off.
+Buttons act once per press, not again on release (Push-to-Talk also acts on release). Fader changes do not unmute.
+Changes made through desktop controls update M/S LEDs. Other button LEDs are off unless a binding lights them.
 
 ### Direct faders and optional soft takeover
 
@@ -131,6 +132,37 @@ A stream can disappear or reject a move. Other moves continue; remaining failed
 moves are logged. There is no atomic rollback. The S LED reports the actual
 default output, not whether every stream was successfully moved. Input S does
 not migrate recording streams or convert an input device into a playback stream.
+
+### Button bindings
+
+Any button can be bound in the web interface (or by hand) with `[[buttons]]` tables.
+Strip M/S, Play and Pause keep the behavior above unless overridden; `action = "none"`
+disables a default. M/S of a configured strip cannot be rebound.
+
+```toml
+[[buttons]]
+button = "REC_1"      # Button name: REC_n, SELECT_n, MUTE_n, SOLO_n, BANK_LEFT, PLAY, UP, ...
+action = "mic_mute"
+led = "active"        # off (default), active, on
+
+[[buttons]]
+button = "REC_3"
+action = "mute_ch"    # needs channel = a configured strip
+channel = 1
+```
+
+| Action | Effect | LED `active` |
+|---|---|---|
+| `mute_ch`, `solo_ch` | Same as the strip's M / S for `channel` | muted / default device |
+| `mic_mute` | Mute all inputs, or unmute all if all are muted (monitor sources excluded) | all inputs muted |
+| `ptt` | Unmute all inputs while held, mute them on release | held |
+| `out_cycle` | Next sink among the configured output strips as default, moving streams like S | - |
+| `play_pause`, `play`, `pause`, `next`, `previous` | MPRIS on the configured player | - |
+
+`led = "on"` lights the LED whenever control is active. Buttons without an LED (Bank,
+navigation) reject any LED setting. Push-to-Talk does not mute the inputs at startup, only
+after the first release; a button held during a reconnect or mode change is not released
+by the daemon.
 
 ## Install a user service
 

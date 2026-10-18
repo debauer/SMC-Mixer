@@ -26,6 +26,10 @@ class FakeAudio(Audio):
         self.calls.append(("volume", device.name, percent))
         self.devices[device.key] = replace(self.devices[device.key], volume=percent)
 
+    def mute(self, device: Device, muted: bool) -> None:
+        self.calls.append(("setmute", device.name, muted))
+        self.devices[device.key] = replace(self.devices[device.key], muted=muted)
+
     def toggle_mute(self, device: Device) -> None:
         self.calls.append(("mute", device.name))
         self.devices[device.key] = replace(self.devices[device.key], muted=not self.devices[device.key].muted)

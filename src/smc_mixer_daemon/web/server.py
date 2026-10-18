@@ -20,6 +20,8 @@ PAGES = {
     "/app.css": ("app.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
     "/dom.js": ("dom.js", "text/javascript; charset=utf-8"),
+    "/buttons.js": ("buttons.js", "text/javascript; charset=utf-8"),
+    "/button_editor.js": ("button_editor.js", "text/javascript; charset=utf-8"),
     "/strips.js": ("strips.js", "text/javascript; charset=utf-8"),
     "/editor.js": ("editor.js", "text/javascript; charset=utf-8"),
 }

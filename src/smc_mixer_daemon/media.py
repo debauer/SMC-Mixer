@@ -25,8 +25,8 @@ class Media:
         return matches[0]
 
     def control(self, action: str, valid: Callable[[], bool] = lambda: True) -> None:
-        if action not in ("play", "pause"):
-            raise ValueError("media action must be play or pause")
+        if action not in ("play", "pause", "play-pause", "next", "previous"):
+            raise ValueError(f"unsupported media action {action!r}")
         if valid():
             player = self.resolve()
             if valid():

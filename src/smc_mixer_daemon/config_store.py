@@ -24,6 +24,11 @@ def render(config: Config) -> str:
     for strip in sorted(config.strips, key=lambda row: row.channel):
         lines += ["[[strips]]", f"channel = {strip.channel}", f"kind = {quote(strip.kind)}"]
         lines += [f"name = {quote(strip.name)}", ""]
+    for binding in sorted(config.buttons, key=lambda row: row.button):
+        lines += ["[[buttons]]", f"button = {quote(binding.button.name)}", f"action = {quote(binding.action)}"]
+        if binding.channel is not None:
+            lines.append(f"channel = {binding.channel}")
+        lines += [f"led = {quote(binding.led)}", ""]
     return "\n".join(lines)
 
 
@@ -33,13 +38,15 @@ def from_json(data: Any, current: Config) -> Config:
         raise ConfigError("configuration: expected an object")
     soft = data.get("soft_takeover", False)
     raw: dict[str, Any] = {"daemon": {"soft_takeover": soft}, "strips": data.get("strips", [])}
+    if "buttons" in data:
+        raw["buttons"] = data["buttons"]
     if data.get("player") is not None:
         raw["media"] = {"player": data["player"]}
-    unknown = data.keys() - {"soft_takeover", "player", "strips"}
+    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons"}
     if unknown:
         raise ConfigError(f"configuration: unknown keys: {', '.join(sorted(unknown))}")
     parsed = parse(raw)
-    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web)
+    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons)
 
 
 def save(path: Path, config: Config) -> None:

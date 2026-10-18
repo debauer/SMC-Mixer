@@ -57,6 +57,10 @@ class Api:
             "soft_takeover": config.soft_takeover,
             "player": config.player,
             "strips": [{"channel": s.channel, "kind": s.kind, "name": s.name} for s in config.strips],
+            "buttons": [
+                {"button": b.button.name, "action": b.action, "channel": b.channel, "led": b.led}
+                for b in config.buttons
+            ],
         }
 
     def devices(self) -> dict[str, Any]:
