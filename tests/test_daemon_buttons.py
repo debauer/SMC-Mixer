@@ -1,5 +1,6 @@
 """Configurable button bindings: validation, actions and LED feedback on fake boundaries."""
 
+import itertools
 import tomllib
 from collections.abc import Callable
 
@@ -10,6 +11,7 @@ from smc_mixer import Button, ButtonEvent, Layer
 from smc_mixer_daemon import actions, config_store
 from smc_mixer_daemon.audio import Device, Snapshot
 from smc_mixer_daemon.buttons import Binding, effective
+from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config, ConfigError, Strip, parse
 from smc_mixer_daemon.controller import Controller
 
@@ -230,3 +232,31 @@ def test_media_status_parses_playerctl_output() -> None:
     assert Media("firefox", runner).status() == "Playing"
     with pytest.raises(BackendError):
         Media("firefox", lambda args: "firefox" if "--list-all" in args else "weird").status()
+
+
+def test_next_and_previous_blink_three_times(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [100.0]
+    for module in ("controller", "actions"):
+        monkeypatch.setattr(f"smc_mixer_daemon.{module}.time.monotonic", lambda: clock[0])
+    media = FakeMedia()
+    controller, _ = started(Binding(Button.FAST_FORWARD, "next"), Binding(Button.UP, "previous"), media=media)
+    tap(controller, Button.FAST_FORWARD)
+    tap(controller, Button.UP)  # no LED on this button: must not fail
+    seen = []
+    for _ in range(40):
+        controller.feedback()
+        seen.append(controller.leds[Button.FAST_FORWARD])
+        clock[0] += 0.06
+    edges = sum(1 for a, b in itertools.pairwise(seen) if not a and b) + int(seen[0])
+    assert edges == 3 and not seen[-1] and not controller.pulses
+    assert media.actions == ["next", "previous"]
+
+
+def test_failed_media_request_does_not_blink() -> None:
+    class Broken(FakeMedia):
+        def control(self, action: str, valid: Callable[[], bool] = lambda: True) -> None:
+            raise BackendError("no player")
+
+    controller, _ = started(Binding(Button.FAST_FORWARD, "next"), media=Broken())
+    tap(controller, Button.FAST_FORWARD)
+    assert not controller.pulses

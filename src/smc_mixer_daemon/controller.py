@@ -26,6 +26,8 @@ from smc_mixer_daemon.takeover import Takeover, percent
 log = logging.getLogger(__name__)
 
 MEDIA_POLL = 1.0
+PULSE_COUNT = 3  # blinks after next/previous
+PULSE_STEP = 0.12  # seconds per on or off phase
 
 
 class Controller:
@@ -49,6 +51,7 @@ class Controller:
         self.blinks: dict[int, bool] = {}
         self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
         self.actions = Actions(self)
+        self.pulses: dict[Button, float] = {}
         self.media_state: str | None = None
         self.media_error = ""
         self.next_media_poll = 0.0
@@ -184,6 +187,13 @@ class Controller:
         for button, binding in self.bindings.items():
             if button in LED_BUTTONS:
                 wanted[button] = self.actions.lit(binding)
+        now = time.monotonic()
+        for button, started in list(self.pulses.items()):
+            phase = int((now - started) / PULSE_STEP)
+            if phase >= 2 * PULSE_COUNT:
+                del self.pulses[button]
+            elif button in LED_BUTTONS:
+                wanted[button] = phase % 2 == 0
         for button, on in wanted.items():
             if self.leds.get(button) != on:
                 self.mixer.set_led(button, on)

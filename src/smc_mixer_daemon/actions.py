@@ -4,6 +4,7 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
+from smc_mixer import Button
 from smc_mixer_daemon.audio import Device, Snapshot
 from smc_mixer_daemon.buttons import MEDIA_ACTIONS, Binding
 from smc_mixer_daemon.commands import BackendError
@@ -34,7 +35,7 @@ class Actions:
     def press(self, binding: Binding) -> None:
         action = binding.action
         if action in MEDIA_ACTIONS:
-            self.media(MEDIA_ACTIONS[action])
+            self.media(MEDIA_ACTIONS[action], binding.button)
             return
         # Audio actions need current topology, not state retained across device changes.
         self.c.refresh()
@@ -127,11 +128,13 @@ class Actions:
         following = names.index(snapshot.sink) + 1 if snapshot.sink in names else 0
         self.c.audio.select(sinks[following % len(sinks)], lambda: self.c.ready)
 
-    def media(self, action: str) -> None:
+    def media(self, action: str, button: Button) -> None:
         if self.c.media:
             try:
                 self.c.media.control(action, lambda: self.c.ready)
                 self.c.next_media_poll = time.monotonic() + 0.15  # let the player apply it first
+                if action in ("next", "previous"):
+                    self.c.pulses[button] = time.monotonic()
             except BackendError as exc:
                 log.warning("media request failed: %s", exc)
 

@@ -162,7 +162,7 @@ channel = 1
 | `ptt` | Unmute all inputs while held, mute them on release | held |
 | `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
 | `play_pause`, `play`, `pause` | MPRIS on the configured player | playing / playing / paused |
-| `next`, `previous` | MPRIS on the configured player | - |
+| `next`, `previous` | MPRIS on the configured player; the button's LED blinks three times after a successful request | - |
 
 `led = "on"` lights the LED whenever control is active. Buttons without an LED (Bank,
 navigation) reject any LED setting. Push-to-Talk does not mute the inputs at startup, only
