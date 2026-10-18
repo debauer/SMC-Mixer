@@ -1,6 +1,7 @@
 """Execution and LED state of button actions; runs only on the control thread."""
 
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from smc_mixer_daemon.audio import Device, Snapshot
@@ -11,6 +12,9 @@ if TYPE_CHECKING:
     from smc_mixer_daemon.controller import Controller
 
 log = logging.getLogger(__name__)
+
+SETTLE_TRIES = 5
+SETTLE_DELAY = 0.2
 
 
 def inputs(snapshot: Snapshot) -> list[Device]:
@@ -46,16 +50,29 @@ class Actions:
         device, snapshot = self.device(binding.channel), self.c.snapshot
         if device is None or snapshot is None:
             return
-        current = snapshot.sink if device.kind == "sink" else snapshot.source
-        if current == device.name:
-            log.info("default %s is now %s", device.kind, device.name)
-        else:
-            log.warning(
-                "default %s is still %s after selecting %s; the audio server rejected or reverted it",
-                device.kind,
-                current,
-                device.name,
-            )
+        # The session manager applies the new default asynchronously; give it a moment before judging.
+        for attempt in range(SETTLE_TRIES):
+            current = snapshot.sink if device.kind == "sink" else snapshot.source
+            if current == device.name:
+                log.info("default %s is now %s", device.kind, device.name)
+                return
+            if attempt + 1 < SETTLE_TRIES:
+                time.sleep(SETTLE_DELAY)
+                self.c.refresh()
+                if self.c.snapshot is None:
+                    return
+                snapshot = self.c.snapshot
+        try:
+            ports = self.c.audio.ports(device)
+        except BackendError as exc:
+            ports = f"ports unavailable: {exc}"
+        log.warning(
+            "default %s is still %s after selecting %s; the audio server rejected or reverted it (%s)",
+            device.kind,
+            current,
+            device.name,
+            ports,
+        )
 
     def audio(self, binding: Binding) -> None:
         action, audio, snapshot = binding.action, self.c.audio, self.c.snapshot

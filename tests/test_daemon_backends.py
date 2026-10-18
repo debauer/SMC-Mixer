@@ -159,3 +159,24 @@ def test_monitor_sources_are_recognized_by_name_class_or_sink_link() -> None:
     assert is_monitor({"name": "x", "monitor_of_sink": "alsa_output.x"})
     assert not is_monitor({"name": "alsa_input.usb-mic", "monitor_of_sink": None, "properties": {}})
     assert not is_monitor({"name": "alsa_input.usb-mic", "monitor_of_sink": "n/a"})
+
+
+def test_port_summary_lists_availability_for_diagnostics() -> None:
+    import json
+
+    from smc_mixer_daemon.audio import Audio, Device
+
+    rows = [
+        {
+            "name": "alsa_input.mic2",
+            "active_port": "analog-input-mic2",
+            "ports": [{"name": "analog-input-mic2", "availability": "not available"}, {"name": "other"}],
+        }
+    ]
+    audio = Audio(lambda args: json.dumps(rows))
+    device = Device("source", "alsa_input.mic2", 1, "Mic 2", False, 10)
+    assert (
+        audio.ports(device)
+        == "active port 'analog-input-mic2'; ports: analog-input-mic2: not available; other: unknown"
+    )
+    assert audio.ports(Device("source", "gone", 2, "x", False, 0)) == "device no longer listed"

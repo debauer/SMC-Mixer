@@ -71,6 +71,19 @@ class Audio:
         except (ValueError, TypeError) as exc:
             raise BackendError(f"invalid pactl {category} JSON: {exc}") from exc
 
+    def ports(self, device: Device) -> str:
+        """Port availability of a device, to explain why the server may refuse to select it."""
+        for row in self.objects(device.kind + "s"):
+            if row.get("name") == device.name:
+                active = row.get("active_port")
+                ports = [
+                    f"{port.get('name')}: {port.get('availability', 'unknown')}"
+                    for port in row.get("ports") or []
+                    if isinstance(port, dict)
+                ]
+                return f"active port {active!r}; ports: {'; '.join(ports) or 'none'}"
+        return "device no longer listed"
+
     def snapshot(self) -> Snapshot:
         devices = {}
         try:
