@@ -1,6 +1,7 @@
 """Serialized application logic; never called on MIDI callback threads."""
 
 import logging
+import time
 from collections.abc import Callable
 
 from smc_mixer import (
@@ -17,11 +18,14 @@ from smc_mixer import (
 from smc_mixer_daemon.actions import Actions
 from smc_mixer_daemon.audio import Audio, Device, Snapshot
 from smc_mixer_daemon.buttons import effective
+from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.media import Media
 from smc_mixer_daemon.takeover import Takeover, percent
 
 log = logging.getLogger(__name__)
+
+MEDIA_POLL = 1.0
 
 
 class Controller:
@@ -45,6 +49,9 @@ class Controller:
         self.blinks: dict[int, bool] = {}
         self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
         self.actions = Actions(self)
+        self.media_state: str | None = None
+        self.media_error = ""
+        self.next_media_poll = 0.0
 
     @property
     def ready(self) -> bool:
@@ -150,6 +157,23 @@ class Controller:
         self.held.add(event.button)
         if binding:
             self.actions.press(binding)
+
+    def poll_media(self) -> None:
+        """Read the player state about once a second; an absent player is a state, not a crash."""
+        if not self.media or not self.ready or time.monotonic() < self.next_media_poll:
+            return
+        self.next_media_poll = time.monotonic() + MEDIA_POLL
+        try:
+            state, error = self.media.status(), ""
+        except BackendError as exc:
+            state, error = None, str(exc)
+        if error != self.media_error:
+            self.media_error = error
+            if error:
+                log.warning("media state unavailable: %s", error)
+        if state != self.media_state:
+            self.media_state = state
+            self.feedback()
 
     def feedback(self) -> None:
         if not self.mixer.connected:

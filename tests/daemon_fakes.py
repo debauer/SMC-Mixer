@@ -6,6 +6,7 @@ from dataclasses import replace
 from fakes import FakeDevice, FakePort
 from smc_mixer import SmcMixer
 from smc_mixer_daemon.audio import Audio, Device, Snapshot
+from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.media import Media
 
 
@@ -46,6 +47,12 @@ class FakeAudio(Audio):
 class FakeMedia(Media):
     def __init__(self) -> None:
         self.actions: list[str] = []
+        self.state: str | None = "Paused"
+
+    def status(self) -> str:
+        if self.state is None:
+            raise BackendError("no player")
+        return self.state
 
     def control(self, action: str, valid: Callable[[], bool] = lambda: True) -> None:
         if valid():

@@ -9,7 +9,7 @@ CHANNEL_ACTIONS = ("mute_ch", "select_ch")
 MEDIA_ACTIONS = {"play": "play", "pause": "pause", "play_pause": "play-pause", "next": "next", "previous": "previous"}
 ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_cycle", *MEDIA_ACTIONS)
 # Actions whose state can drive the LED.
-STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt"})
+STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt", "play", "pause", "play_pause"})
 LEDS = ("off", "active", "on")
 
 
@@ -56,8 +56,8 @@ def strip_buttons(channels: set[int]) -> set[Button]:
 def effective(explicit: tuple[Binding, ...], channels: set[int]) -> dict[Button, Binding]:
     """Built-in defaults (strip M/S, Play, Pause) overlaid with explicit bindings."""
     result = {
-        Button.PLAY: Binding(Button.PLAY, "play"),
-        Button.STOP: Binding(Button.STOP, "pause"),
+        Button.PLAY: Binding(Button.PLAY, "play", led="active"),
+        Button.STOP: Binding(Button.STOP, "pause", led="active"),
     }
     for channel in sorted(channels):
         for row, action in (("MUTE", "mute_ch"), ("SELECT", "select_ch")):

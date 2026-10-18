@@ -108,6 +108,6 @@ def describe(mixer: SmcMixer | None, controller: Controller | None, config: Conf
         "faders": list(mixer.faders) if connected and mixer else [None] * 8,
         "strips": strips,
         "leds": {button.name: on for button, on in controller.leds.items()} if controller else {},
-        "media": {"player": config.player},
+        "media": {"player": config.player, "state": controller.media_state if controller else None},
         "soft_takeover": config.soft_takeover,
     }

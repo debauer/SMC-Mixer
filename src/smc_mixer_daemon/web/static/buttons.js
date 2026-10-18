@@ -28,9 +28,9 @@ export const ACTIONS = [
   { id: "mic_mute", label: "Mikro stumm", hint: "alle Eingänge", state: true },
   { id: "ptt", label: "Push-to-Talk", hint: "Mikro nur beim Halten", state: true },
   { id: "out_cycle", label: "Ausgang wechseln", hint: "Ausgangs-Kanäle rotieren" },
-  { id: "play_pause", label: "Play / Pause", hint: "MPRIS umschalten" },
-  { id: "play", label: "Play", hint: "MPRIS" },
-  { id: "pause", label: "Pause", hint: "MPRIS" },
+  { id: "play_pause", label: "Play / Pause", hint: "MPRIS umschalten", state: true },
+  { id: "play", label: "Play", hint: "MPRIS", state: true },
+  { id: "pause", label: "Pause", hint: "MPRIS", state: true },
   { id: "next", label: "Nächster Titel", hint: "MPRIS" },
   { id: "previous", label: "Vorheriger Titel", hint: "MPRIS" },
 ];

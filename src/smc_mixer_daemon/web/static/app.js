@@ -65,6 +65,14 @@ function renderHeader() {
   $("discard").disabled = !dirty;
 }
 
+const PLAYBACK = { Playing: "spielt", Paused: "pausiert", Stopped: "gestoppt" };
+
+function renderMedia() {
+  const { media } = model.status;
+  const text = media && media.player ? `${media.player}: ${PLAYBACK[media.state] || "nicht erreichbar"}` : "";
+  $("media-state").textContent = text;
+}
+
 function renderLog() {
   const key = JSON.stringify(model.status.log);
   if (key === loggedKey) return;
@@ -79,6 +87,7 @@ function renderLive() {
   updateStrips(model);
   updateButtons(model);
   renderHeader();
+  renderMedia();
   renderLog();
 }
 
@@ -119,7 +128,7 @@ const handlers = {
       const next = { action: "none", channel: null, led: "off", ...draft.buttons[name], ...patch };
       if (next.action === "none" && !["PLAY", "STOP"].includes(name)) return void delete draft.buttons[name];
       if (next.action === "none" || !hasLed(name)) next.led = "off";
-      if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt"].includes(next.action)) next.led = "off";
+      if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt", "play", "pause", "play_pause"].includes(next.action)) next.led = "off";
       draft.buttons[name] = next;
     }),
   global: (fn) => edit(fn),

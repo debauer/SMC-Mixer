@@ -89,13 +89,13 @@ who can reach it can edit the configuration; the daemon logs a warning.
 | SELECT on an output strip | Select default output and move all current playback streams there |
 | SELECT on an input strip | Select default input, without explicitly moving active recordings |
 | SELECT LED | Device is the current default of its kind (input/output independently) |
-| Play | Play/resume the configured MPRIS player |
-| Physical Pause (MCU STOP) | Pause the configured MPRIS player |
+| Play | Play/resume the configured MPRIS player; LED on while it is playing |
+| Physical Pause (MCU STOP) | Pause the configured MPRIS player; LED on while it is paused |
 | All other buttons (R, S/SOLO, Bank, transport, navigation, and M/SELECT of unassigned strips) | Unassigned until bound, see below |
 | Knobs | Unassigned |
 
 Buttons act once per press, not again on release (Push-to-Talk also acts on release). Fader changes do not unmute.
-Changes made through desktop controls update M/SELECT LEDs. Other button LEDs are off unless a binding lights them.
+Changes made through desktop controls update M/SELECT LEDs. The player state is read about once a second, so Play/Pause LEDs also follow pauses started in the player itself; they are off while the player is missing, ambiguous or reports Stopped. Other button LEDs are off unless a binding lights them.
 
 ### Direct faders and optional soft takeover
 
@@ -161,7 +161,8 @@ channel = 1
 | `mic_mute` | Mute all inputs, or unmute all if all are muted (monitor sources excluded) | all inputs muted |
 | `ptt` | Unmute all inputs while held, mute them on release | held |
 | `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
-| `play_pause`, `play`, `pause`, `next`, `previous` | MPRIS on the configured player | - |
+| `play_pause`, `play`, `pause` | MPRIS on the configured player | playing / playing / paused |
+| `next`, `previous` | MPRIS on the configured player | - |
 
 `led = "on"` lights the LED whenever control is active. Buttons without an LED (Bank,
 navigation) reject any LED setting. Push-to-Talk does not mute the inputs at startup, only

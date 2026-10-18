@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+MEDIA_STATE = {"play": "Playing", "play_pause": "Playing", "pause": "Paused"}
 SETTLE_TRIES = 5
 SETTLE_DELAY = 0.2
 
@@ -130,6 +131,7 @@ class Actions:
         if self.c.media:
             try:
                 self.c.media.control(action, lambda: self.c.ready)
+                self.c.next_media_poll = time.monotonic() + 0.15  # let the player apply it first
             except BackendError as exc:
                 log.warning("media request failed: %s", exc)
 
@@ -149,4 +151,6 @@ class Actions:
         if binding.action == "mic_mute":
             devices = inputs(snapshot)
             return bool(devices) and all(d.muted for d in devices)
+        if binding.action in MEDIA_STATE:
+            return self.c.media_state == MEDIA_STATE[binding.action]
         return binding.action == "ptt" and binding.button in self.c.held

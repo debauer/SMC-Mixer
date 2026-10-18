@@ -100,6 +100,7 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                             if inbox.generation != generation or stop.is_set():
                                 break
                             controller.event(event)
+                    controller.poll_media()
                     controller.feedback()
                 except BackendError as exc:
                     notices.error("audio backend", exc)

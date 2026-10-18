@@ -189,3 +189,44 @@ def test_slow_session_manager_is_not_reported_as_rejection(
     caplog.set_level("INFO")
     tap(controller, Button.SELECT_4)
     assert "is now mic2" in caplog.text and "still" not in caplog.text
+
+
+def test_play_and_pause_leds_follow_player_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [100.0]
+    monkeypatch.setattr("smc_mixer_daemon.controller.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("smc_mixer_daemon.actions.time.monotonic", lambda: clock[0])
+    media = FakeMedia()
+    controller, _ = started(Binding(Button.RECORD, "play_pause", led="active"), media=media)
+    controller.poll_media()
+    assert controller.media_state == "Paused"
+    assert (controller.leds[Button.PLAY], controller.leds[Button.STOP], controller.leds[Button.RECORD]) == (
+        False,
+        True,
+        False,
+    )
+    media.state = "Playing"
+    controller.poll_media()  # throttled: still the old state
+    assert controller.media_state == "Paused"
+    clock[0] += 1.1
+    controller.poll_media()
+    assert (controller.leds[Button.PLAY], controller.leds[Button.STOP], controller.leds[Button.RECORD]) == (
+        True,
+        False,
+        True,
+    )
+    media.state = None
+    clock[0] += 1.1
+    controller.poll_media()
+    assert controller.media_state is None and not controller.leds[Button.PLAY] and not controller.leds[Button.STOP]
+
+
+def test_media_status_parses_playerctl_output() -> None:
+    from smc_mixer_daemon.commands import BackendError
+    from smc_mixer_daemon.media import Media
+
+    def runner(args: list[str]) -> str:
+        return "firefox.instance1" if "--list-all" in args else "Playing"
+
+    assert Media("firefox", runner).status() == "Playing"
+    with pytest.raises(BackendError):
+        Media("firefox", lambda args: "firefox" if "--list-all" in args else "weird").status()
