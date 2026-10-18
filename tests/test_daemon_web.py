@@ -14,6 +14,7 @@ import pytest
 
 from daemon_fakes import FakeAudio, FakeMedia, mixer_pair
 from smc_mixer_daemon import config_store, runtime
+from smc_mixer_daemon.audio import Device
 from smc_mixer_daemon.config import Config, ConfigError, Strip, WebConfig, load, parse
 from smc_mixer_daemon.controller import Controller
 from smc_mixer_daemon.status import Board, describe
@@ -268,3 +269,13 @@ def test_strip_labels_round_trip_validate_and_publish() -> None:
         base["strips"][0]["label"] = label  # type: ignore[assignment]
         with pytest.raises(ConfigError):
             config_store.from_json(base, Config(()))
+
+
+def test_devices_hide_monitors_and_easyeffects_sources_but_not_sinks() -> None:
+    audio = FakeAudio()
+    for name, monitor in (("easyeffects_source", False), ("EasyEffects_mic", False), ("out.monitor", True)):
+        audio.devices["source", name] = Device("source", name, 9, name, False, 50, monitor)
+    audio.devices["sink", "easyeffects_sink"] = Device("sink", "easyeffects_sink", 10, "EE", False, 50)
+    api = Api(Board(Config(STRIPS)), Path("unused.toml"), lambda: audio, FakePlayers)
+    names = {(d["kind"], d["name"]) for d in api.devices()["devices"]}
+    assert names == {("sink", "speakers"), ("sink", "headset"), ("source", "mic"), ("sink", "easyeffects_sink")}

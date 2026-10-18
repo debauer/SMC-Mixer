@@ -24,7 +24,7 @@ def devices() -> None:
     require("pactl")
     snapshot = Audio().snapshot()
     for device in snapshot.devices.values():
-        if device.kind == "source" and device.monitor:
+        if not device.offered:
             continue
         marker = " [default]" if snapshot.selected(device) else ""
         print(f"{device.kind}: {device.name}{marker}\n  {device.description}")

@@ -68,7 +68,7 @@ class Api:
         devices = [
             {"kind": d.kind, "name": d.name, "description": d.description, "default": snapshot.selected(d)}
             for d in snapshot.devices.values()
-            if not (d.kind == "source" and d.monitor)
+            if d.offered
         ]
         players: list[str] = []
         player_error = None

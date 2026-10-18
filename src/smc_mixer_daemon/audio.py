@@ -22,6 +22,11 @@ class Device:
     monitor: bool = False
 
     @property
+    def offered(self) -> bool:
+        """Whether to list the device for assignment: not a monitor or EasyEffects virtual source."""
+        return not (self.kind == "source" and (self.monitor or self.name.lower().startswith("easyeffects")))
+
+    @property
     def key(self) -> tuple[str, str]:
         return self.kind, self.name
 

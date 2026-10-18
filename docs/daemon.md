@@ -29,7 +29,7 @@ names**, not numeric IDs. An optional `label = "Desk speakers"` (at most 40
 characters) gives a strip a display name in the web interface; it never affects
 device matching. `sink` means output, `source` means input. Omitted
 channels are inactive; missing devices are never replaced with another device.
-Monitor sources are hidden from `devices` but can be assigned explicitly.
+Monitor sources and EasyEffects virtual sources (`easyeffects*`) are hidden from `devices` and the web interface but can be assigned explicitly in the file.
 
 The example contains placeholder audio names and must be edited. Set
 `media.player` to a player from `playerctl --list-all`, or remove `[media]` to
