@@ -148,3 +148,14 @@ def test_command_timeout_and_nonzero_are_errors(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(subprocess, "run", lambda *a, **kw: subprocess.CompletedProcess(a[0], 1, "", "bad"))
     with pytest.raises(CommandError, match="bad"):
         run(["pactl", "info"])
+
+
+def test_monitor_sources_are_recognized_by_name_class_or_sink_link() -> None:
+    from smc_mixer_daemon.audio import is_monitor
+
+    assert is_monitor({"name": "alsa_output.pci-0000_01_00.1.hdmi-stereo-extra3.monitor"})
+    assert is_monitor({"name": "x", "properties": {"device.class": "monitor"}})
+    assert is_monitor({"name": "x", "monitor_of_sink": 0})
+    assert is_monitor({"name": "x", "monitor_of_sink": "alsa_output.x"})
+    assert not is_monitor({"name": "alsa_input.usb-mic", "monitor_of_sink": None, "properties": {}})
+    assert not is_monitor({"name": "alsa_input.usb-mic", "monitor_of_sink": "n/a"})

@@ -42,6 +42,17 @@ def integer(value: Any) -> int:
     return value
 
 
+def is_monitor(row: dict[str, Any]) -> bool:
+    """Monitor sources mirror an output ("Monitor of ... Output"); they are not microphones."""
+    properties = row.get("properties")
+    device_class = properties.get("device.class") if isinstance(properties, dict) else None
+    return (
+        str(row.get("name", "")).endswith(".monitor")
+        or device_class == "monitor"
+        or row.get("monitor_of_sink") not in (None, "", "n/a", 4294967295, -1)
+    )
+
+
 class Audio:
     def __init__(self, runner: Runner = run) -> None:
         self.run = runner
@@ -74,7 +85,7 @@ class Audio:
                         str(row.get("description", device_name)),
                         muted,
                         sum(volumes) / len(volumes) * 100 / 65536,
-                        row.get("monitor_of_sink") not in (None, "", "n/a", 4294967295, -1),
+                        kind == "source" and is_monitor(row),
                     )
                     if device.key in devices:
                         raise ValueError(f"duplicate device name {device_name}")
