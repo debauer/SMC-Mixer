@@ -158,15 +158,17 @@ channel = 1
 | Action | Effect | LED `active` |
 |---|---|---|
 | `mute_ch`, `select_ch` | Same as the strip's M / SELECT for `channel` | muted / default device |
-| `mic_mute` | Mute all inputs, or unmute all if all are muted (monitor sources excluded) | all inputs muted |
-| `out_mute` | Mute all outputs, or unmute all if all are muted | all outputs muted |
+| `mic_mute` | Mute all inputs (monitor sources excluded); pressing again unmutes them except those that were already muted before | all inputs muted |
+| `out_mute` | Mute all outputs; pressing again unmutes them except those that were already muted before | all outputs muted |
 | `ptt` | Unmute all inputs while held, mute them on release | held |
 | `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
 | `play_pause`, `play`, `pause` | MPRIS on the configured player | playing / playing / paused |
 | `next`, `previous` | MPRIS on the configured player; the button's LED blinks three times after a successful request | - |
 
 `led = "on"` lights the LED whenever control is active. Buttons without an LED (Bank,
-navigation) reject any LED setting. Push-to-Talk does not mute the inputs at startup, only
+navigation) reject any LED setting. The "already muted before" memory lives in the running daemon only: after a restart or
+reload, or when everything was muted elsewhere, the next press unmutes everything.
+Push-to-Talk does not mute the inputs at startup, only
 after the first release; a button held during a reconnect or mode change is not released
 by the daemon.
 

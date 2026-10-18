@@ -3,6 +3,7 @@
 import itertools
 import tomllib
 from collections.abc import Callable
+from dataclasses import replace
 
 import pytest
 
@@ -262,15 +263,36 @@ def test_failed_media_request_does_not_blink() -> None:
     assert not controller.pulses
 
 
-def test_output_mute_toggles_every_sink_and_lights_led() -> None:
+def test_output_mute_restores_devices_that_were_muted_before() -> None:
     controller, audio = started(Binding(Button.REC_4, "out_mute", led="active"))
-    tap(controller, Button.REC_4)  # headset was already muted: mute the rest
+    tap(controller, Button.REC_4)  # headset was already muted before
     assert audio.calls == [("setmute", "speakers", True), ("setmute", "headset", True)]
     assert controller.leds[Button.REC_4]
     tap(controller, Button.REC_4)
-    assert audio.calls[-2:] == [("setmute", "speakers", False), ("setmute", "headset", False)]
-    assert not controller.leds[Button.REC_4]
+    assert audio.calls[-2:] == [("setmute", "speakers", False), ("setmute", "headset", True)]
+    assert not controller.leds[Button.REC_4] and audio.devices["sink", "headset"].muted
+    tap(controller, Button.REC_4)
+    tap(controller, Button.REC_4)
+    assert audio.calls[-2:] == [("setmute", "speakers", False), ("setmute", "headset", True)]
     assert all(call[1] != "mic" for call in audio.calls)
+
+
+def test_unmute_without_memory_unmutes_everything() -> None:
+    controller, audio = started(Binding(Button.REC_4, "out_mute"))
+    for device in ("speakers", "headset"):
+        audio.devices["sink", device] = replace(audio.devices["sink", device], muted=True)
+    controller.refresh()
+    tap(controller, Button.REC_4)
+    assert audio.calls == [("setmute", "speakers", False), ("setmute", "headset", False)]
+
+
+def test_mic_mute_all_restores_individually_muted_inputs() -> None:
+    controller, audio = started(Binding(Button.REC_1, "mic_mute", led="active"))
+    audio.devices["source", "mic2"] = Device("source", "mic2", 4, "Mic 2", True, 40)
+    controller.refresh()
+    tap(controller, Button.REC_1)
+    tap(controller, Button.REC_1)
+    assert audio.devices["source", "mic"].muted is False and audio.devices["source", "mic2"].muted is True
 
 
 def test_stateful_actions_default_to_a_state_led_unless_set_otherwise() -> None:

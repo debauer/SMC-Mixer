@@ -30,6 +30,7 @@ def inputs(snapshot: Snapshot) -> list[Device]:
 class Actions:
     def __init__(self, controller: "Controller") -> None:
         self.c = controller
+        self.remembered: dict[str, set[str]] = {}
 
     def device(self, channel: int | None) -> Device | None:
         strip = next((row for row in self.c.config.strips if row.channel == channel), None)
@@ -93,19 +94,24 @@ class Actions:
             else:
                 audio.select(device, lambda: self.c.ready)
         elif action == "mic_mute":
-            devices = inputs(snapshot)
-            muting = any(not d.muted for d in devices)
-            for device in devices:
-                audio.mute(device, muting)
+            self.toggle_all("source", inputs(snapshot))
         elif action == "out_mute":
-            devices = outputs(snapshot)
-            muting = any(not d.muted for d in devices)
-            for device in devices:
-                audio.mute(device, muting)
+            self.toggle_all("sink", outputs(snapshot))
         elif action == "ptt":
             self.set_inputs_muted(False)
         elif action == "out_cycle":
             self.cycle_output()
+
+    def toggle_all(self, kind: str, devices: list[Device]) -> None:
+        """Mute everything, or undo it while keeping devices that were muted before."""
+        if any(not d.muted for d in devices):
+            self.remembered[kind] = {d.name for d in devices if d.muted}
+            for device in devices:
+                self.c.audio.mute(device, True)
+        else:
+            keep = self.remembered.pop(kind, set())
+            for device in devices:
+                self.c.audio.mute(device, device.name in keep)
 
     def release(self, binding: Binding) -> None:
         if binding.action != "ptt" or not self.c.ready:
