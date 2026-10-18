@@ -4,9 +4,9 @@ Status: 2026-10-17. Static analysis only (unpacked, `strings`, `xxd`); not run.
 Historical source investigation. See the current [USB/Sinco reference](../usb-midi.md)
 and [control mapping](../control.md) for device-tested conclusions.
 
-| File | SHA-256 |
+| Analyzed file (manufacturer download, not distributed here) | SHA-256 |
 |---|---|
-| `vendor/MidiSuite_new.zip` | `c2c116f4610fb541f0e4b3b8e23ea52fb51a80ca9843be8667242622ad46b4cf` |
+| `MidiSuite_new.zip` | `c2c116f4610fb541f0e4b3b8e23ea52fb51a80ca9843be8667242622ad46b4cf` |
 
 ## Findings
 

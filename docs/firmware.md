@@ -7,9 +7,9 @@ not establish its runtime state-table addresses. See the
 [tools guide](tools.md#offline-firmware-workflow) for extraction/disassembly commands
 and [documentation index](README.md) for the other references.
 
-| File | Size | SHA-256 |
+| Analyzed file (not distributed with the repository) | Size | SHA-256 |
 |---|---:|---|
-| `vendor/SMC-Mixer_013.fwsc` | 479700 bytes | `113e8d4bdc9724fdb0eac4307a202eee827e4bec50578aa5ab4c28b76644c5f6` |
+| `SMC-Mixer_013.fwsc` | 479700 bytes | `113e8d4bdc9724fdb0eac4307a202eee827e4bec50578aa5ab4c28b76644c5f6` |
 
 The user supplied the file; its source is undocumented. Authenticity has not
 been verified because no manufacturer reference checksum is available.
@@ -122,9 +122,9 @@ code has not been fully decrypted or analyzed.
   known function and Jieli's `llvm-objdump` before drawing control-flow
   conclusions. `uboot-bank0.bin` is separate, marked compressed and has load
   address `0x12000`; it must be decompressed before disassembly.
-- The local toolchain archive is `tools/jieli-linux-toolchains-20260730.1.tar.xz`
-  (not committed). It is extracted to `build/jieli-linux-toolchains-20260730.1/`;
-  `disassemble-pi32v2` uses `pi32v2/bin/{clang,ld,objdump}` there. The listing
+- The toolchain archive `jieli-linux-toolchains-20260730.1.tar.xz` is downloaded separately
+  and not distributed here; see the [offline firmware workflow](tools.md#offline-firmware-workflow)
+  for extraction. `disassemble-pi32v2` uses its `pi32v2/bin/{clang,ld,objdump}`. The listing
   manifest records the exact commands.
 - The initial static run produced an `ELF32-pi32v2` image and a 2.75 MB listing
   with 50161 decoded instruction records; 1096 are marked `<unknown instruction>`

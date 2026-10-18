@@ -7,9 +7,9 @@ initial survey.
 Historical source investigation. Current USB framing and device-tested memory
 tables are documented in [usb-midi.md](../usb-midi.md) and [control.md](../control.md).
 
-| File | SHA-256 |
+| Analyzed file (manufacturer download, not distributed here) | SHA-256 |
 |---|---|
-| `vendor/SincoOTA.apk` | `449a1c62cac9689cfa96467297738869e01bf94b3e627e158abede223c2cb658` |
+| `SincoOTA.apk` | `449a1c62cac9689cfa96467297738869e01bf94b3e627e158abede223c2cb658` |
 
 ## Architecture [verified]
 

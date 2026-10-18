@@ -158,12 +158,12 @@ discoveries and rejected candidates are retained in
 
 Firmware `013` is a separately supplied file; device state addresses were tested
 on running firmware `011`. Firmware and toolchain archives are not distributed
-in Git. Put your files at the paths below, or supply corresponding input paths.
+in Git. Replace the example paths with your own copies of the files.
 
 ```sh
-uv run unpack-fwsc vendor/SMC-Mixer_013.fwsc --out build/SMC-Mixer_013.unpacked
+uv run unpack-fwsc path/to/SMC-Mixer_013.fwsc --out build/SMC-Mixer_013.unpacked
 uv run analyze-fwsc build/SMC-Mixer_013.unpacked/firmware.ufw --out build/SMC-Mixer_013.analysis
-tar -xf tools/jieli-linux-toolchains-20260730.1.tar.xz -C build
+tar -xf path/to/jieli-linux-toolchains-20260730.1.tar.xz -C build
 uv run disassemble-pi32v2 build/SMC-Mixer_013.analysis/files/application/app.bin
 ```
 

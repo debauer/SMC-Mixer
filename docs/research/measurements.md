@@ -4,7 +4,7 @@ This archive records how the USB-MIDI mapping and readable state tables were
 identified on running firmware **`SMC-Mixer_011`**. The current reference is
 [control.md](../control.md); ordinary usage is documented in [tools.md](../tools.md).
 Historical assumptions below are not additional device features or usage instructions.
-Local dumps under `build/` are ignored by Git.
+The raw capture files are local working data and are not part of the repository.
 
 ## Initial Master-port capture
 
@@ -147,7 +147,7 @@ The guided sequence was DAW -> USER -> DAW -> USER with paired snapshots before
 MUTE 1, after the press/release, and at idle. DAW was confirmed with
 `90 10 7f` / `90 10 00`, USER with `b0 14 7f` / `b0 14 00`.
 
-| Run under `build/mode-probe/` | Range | Result |
+| Mode-probe run (local output) | Range | Result |
 |---|---|---|
 | `20261017-191112-673266` | Type 4, `0x2c0..0x37f` | All 24 snapshots identical |
 | `20261017-191609-620874` | Type 5, `0x00..0x3f` | All 24 snapshots identical |
@@ -173,7 +173,7 @@ the mode sequence, not independent evidence of that power cycle.
 The corrected workflow kept USER selected and Shift released, checking the mode
 before and after each read. Raw CC data bypassed decoder endpoint heuristics.
 
-- `build/knob-probe/20261017-195741-922757/`: partial run in `0x000..0x1ff`, no
+- `20261017-195741-922757` (knob-probe, local output): partial run in `0x000..0x1ff`, no
   table found for the measured knobs.
 - `20261017-195934-292634`: full eight-knob run, 19 samples / 38 snapshots in
   the same range; no persistent direct values, including simple 16-bit checks.
@@ -217,8 +217,7 @@ still open. Canonical layout and limits are in [control.md](../control.md#state-
 ## External mapping reference
 
 Mixxx sources `res/controllers/MVave-SMC-Mixer.midi.xml` and
-`MVave-SMC-Mixer-scripts.js`, commit `1b14de328a8c` (2025-03-09), were kept under
-`build/ref/mixxx/`. The [manual](https://manual.mixxx.org/2.7/en/hardware/controllers/mvave_smc_mixer)
+`MVave-SMC-Mixer-scripts.js`, commit `1b14de328a8c` (2025-03-09), were consulted as a local reference copy. The [manual](https://manual.mixxx.org/2.7/en/hardware/controllers/mvave_smc_mixer)
 and mapping agree with the measured DAW messages and soft-takeover LED blinking.
 Long presses and deck selection are software features; there is no Shift,
 Bluetooth or SysEx handling in that mapping. A comment attributes a future

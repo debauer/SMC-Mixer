@@ -4,9 +4,9 @@ Status: 2026-10-17. Static analysis only (unpacked, `strings`, `xxd`,
 `objdump -h`); not run. This is the historical source investigation;
 the current device-tested protocol is in [usb-midi.md](../usb-midi.md).
 
-| File | SHA-256 |
+| Analyzed file (manufacturer download, not distributed here) | SHA-256 |
 |---|---|
-| `vendor/M-UPGRADE.zip` | `0452d85c0abffdee5c3af376890c15f32ce8c830f82dd8c94cfc891bfa102e15` |
+| `M-UPGRADE.zip` | `0452d85c0abffdee5c3af376890c15f32ce8c830f82dd8c94cfc891bfa102e15` |
 
 ## Architecture
 
