@@ -8,13 +8,13 @@ export const ROWS = [
   ["S", "SOLO"],
 ];
 export const TRANSPORT = [
-  ["BANK_LEFT", "Bank <"],
-  ["BANK_RIGHT", "Bank >"],
+  ["PLAY", "Play"],
+  ["STOP", "Pause"],
+  ["RECORD", "Rec"],
   ["REWIND", "<<"],
   ["FAST_FORWARD", ">>"],
-  ["STOP", "Pause"],
-  ["PLAY", "Play"],
-  ["RECORD", "Rec"],
+  ["BANK_LEFT", "Bank <"],
+  ["BANK_RIGHT", "Bank >"],
   ["UP", "Hoch"],
   ["DOWN", "Runter"],
   ["LEFT", "Links"],
