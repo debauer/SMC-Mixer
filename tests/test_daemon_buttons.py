@@ -320,3 +320,23 @@ def test_stateful_actions_default_to_a_state_led_unless_set_otherwise() -> None:
         }
     )
     assert [b.led for b in parsed.buttons] == ["active", "off", "off", "off"]
+
+
+def test_leds_are_resent_periodically_to_correct_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+    clock = [100.0]
+    monkeypatch.setattr("smc_mixer_daemon.controller.time.monotonic", lambda: clock[0])
+    mixer, master, _ = mixer_pair()
+    audio = FakeAudio()
+    audio.devices["sink", "speakers"] = replace(audio.devices["sink", "speakers"], muted=True)
+    controller = Controller(Config(STRIPS), mixer, audio, None)
+    assert controller.start()
+    master.sent.clear()
+    controller.feedback()
+    assert master.sent == []  # nothing changed, nothing sent
+    clock[0] += 2.1
+    controller.feedback()
+    assert bytes([0x90, int(Button.MUTE_1), 127]) in master.sent
+    master.sent.clear()
+    clock[0] += 0.5
+    controller.feedback()
+    assert master.sent == []

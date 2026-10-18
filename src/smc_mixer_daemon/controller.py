@@ -29,6 +29,7 @@ from smc_mixer_daemon.takeover import Takeover, percent
 log = logging.getLogger(__name__)
 
 MEDIA_POLL = 1.0
+LED_RESYNC = 2.0  # seconds between full LED refreshes
 PULSE_COUNT = 3  # blinks after next/previous
 PULSE_STEP = 0.12  # seconds per on or off phase
 
@@ -60,6 +61,7 @@ class Controller:
         self.media_state: str | None = None
         self.media_error = ""
         self.next_media_poll = 0.0
+        self.next_led_resync = 0.0
 
     @property
     def ready(self) -> bool:
@@ -200,6 +202,10 @@ class Controller:
             if button in LED_BUTTONS:
                 wanted[button] = self.actions.lit(binding)
         now = time.monotonic()
+        if now >= self.next_led_resync:
+            # The mixer's LEDs can drift from what we last sent; resend everything now and then.
+            self.next_led_resync = now + LED_RESYNC
+            self.leds.clear()
         for button, started in list(self.pulses.items()):
             phase = int((now - started) / PULSE_STEP)
             if phase >= 2 * PULSE_COUNT:
