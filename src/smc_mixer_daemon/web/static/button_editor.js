@@ -17,6 +17,31 @@ export function buttonTitle(name) {
   return `${row} Kanal ${match[2]}`;
 }
 
+const field = (id, title, rows, value, placeholder, oninput) =>
+  el(
+    "label",
+    { class: "field", for: id },
+    el("span", { class: "label" }, title),
+    el("textarea", { id, class: "code", rows: String(rows), spellcheck: "false", placeholder, oninput: (event) => oninput(event.target.value) }, value || ""),
+  );
+
+function shellEditor(model, name, binding, handlers) {
+  const tokenHint = model.tokenFile ? `Inhalt von ${model.tokenFile}` : "Token des Daemons";
+  return el(
+    "div",
+    { class: "group" },
+    field("command", "BEFEHL (/bin/sh -c)", 4, binding.command, "z. B. notify-send Hallo", (text) => handlers.command(name, "command", text)),
+    field("release", "BEFEHL BEIM LOSLASSEN (OPTIONAL)", 2, binding.release_command, "optional", (text) => handlers.command(name, "release_command", text)),
+    el(
+      "label",
+      { class: "field", for: "token" },
+      el("span", { class: "label" }, "ZUGRIFFSTOKEN"),
+      el("input", { id: "token", type: "password", autocomplete: "off", value: model.token, placeholder: tokenHint, oninput: (event) => handlers.token(event.target.value) }),
+      el("span", { class: "muted small" }, "Zum Speichern geänderter Befehle nötig, damit andere Programme auf diesem Rechner keine Befehle einschleusen können. " + tokenHint + "."),
+    ),
+  );
+}
+
 export function renderButtonEditor(container, model, handlers, general) {
   const { draft } = model;
   const name = model.selected.id;
@@ -66,6 +91,7 @@ export function renderButtonEditor(container, model, handlers, general) {
       parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "LED"), segment(leds, binding.led, (led) => handlers.binding(name, { led }))));
     }
   }
+  if (!fixed && action && action.shell) parts.push(shellEditor(model, name, binding, handlers));
   parts.push(general(model, handlers.global));
   container.replaceChildren(...parts);
 }

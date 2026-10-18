@@ -35,6 +35,11 @@ name = "REPLACE_WITH_MICROPHONE_SOURCE_NAME"
 # button = "REC_1"
 # action = "mic_mute"
 # led = "active"
+#
+# [[buttons]]
+# button = "REC_2"
+# action = "shell"   # runs `command` with /bin/sh -c as your user
+# command = "notify-send Hello"
 
 # Optional knob bindings; see docs/daemon.md.
 # [[knobs]]

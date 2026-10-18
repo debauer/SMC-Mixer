@@ -34,6 +34,7 @@ export const ACTIONS = [
   { id: "pause", label: "Pause", hint: "MPRIS", state: true },
   { id: "next", label: "Nächster Titel", hint: "MPRIS" },
   { id: "previous", label: "Vorheriger Titel", hint: "MPRIS" },
+  { id: "shell", label: "Shell-Befehl", hint: "sh -c, eigener Befehl", shell: true },
 ];
 const LABEL = Object.fromEntries(ACTIONS.map((a) => [a.id, a.label]));
 

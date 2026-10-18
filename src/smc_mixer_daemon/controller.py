@@ -23,6 +23,7 @@ from smc_mixer_daemon.buttons import effective
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.media import Media
+from smc_mixer_daemon.shell import ShellRunner
 from smc_mixer_daemon.takeover import Takeover, percent
 
 log = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class Controller:
         self.blinks: dict[int, bool] = {}
         self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
         self.knobs = {knob.knob: knob for knob in config.knobs if knob.action != "none"}
+        self.shell = ShellRunner()
         self.actions = Actions(self)
         self.pulses: dict[Button, float] = {}
         self.media_state: str | None = None
@@ -217,6 +219,7 @@ class Controller:
 
     def shutdown(self) -> None:
         self.active = False
+        self.shell.close()
         try:
             self.feedback()
         except (SmcMixerError, OSError) as exc:

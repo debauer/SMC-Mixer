@@ -7,10 +7,11 @@ from smc_mixer import LED_BUTTONS, Button, strip_button
 
 CHANNEL_ACTIONS = ("mute_ch", "select_ch")
 MEDIA_ACTIONS = {"play": "play", "pause": "pause", "play_pause": "play-pause", "next": "next", "previous": "previous"}
-ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_mute", "out_cycle", *MEDIA_ACTIONS)
+ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_mute", "out_cycle", *MEDIA_ACTIONS, "shell")
 # Actions whose state can drive the LED.
 STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt", "out_mute", "play", "pause", "play_pause"})
 LEDS = ("off", "active", "on")
+MAX_COMMAND = 4000
 
 
 class BindingError(ValueError):
@@ -23,6 +24,14 @@ class Binding:
     action: str
     channel: int | None = None
     led: str = "off"
+    command: str | None = None  # shell: run with `sh -c` on press
+    release_command: str | None = None  # shell: optional, run on release
+
+
+def command_text(value: Any, location: str) -> str:
+    if not isinstance(value, str) or not value.strip() or "\x00" in value or len(value) > MAX_COMMAND:
+        raise BindingError(f"{location}: expected a nonempty command of at most {MAX_COMMAND} characters")
+    return value
 
 
 def parse_binding(row: dict[str, Any], location: str, channels: set[int]) -> Binding:
@@ -46,7 +55,14 @@ def parse_binding(row: dict[str, Any], location: str, channels: set[int]) -> Bin
         raise BindingError(f"{location}.led: {button.name} has no LED")
     if led == "active" and action not in STATEFUL:
         raise BindingError(f"{location}.led: action {action} has no state; use off or on")
-    return Binding(button, action, channel, led)
+    command = release_command = None
+    if action == "shell":
+        command = command_text(row.get("command"), f"{location}.command")
+        if row.get("release_command") is not None:
+            release_command = command_text(row["release_command"], f"{location}.release_command")
+    elif row.get("command") is not None or row.get("release_command") is not None:
+        raise BindingError(f"{location}: command and release_command are only valid for shell")
+    return Binding(button, action, channel, led, command, release_command)
 
 
 def strip_buttons(channels: set[int]) -> set[Button]:

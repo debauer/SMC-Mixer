@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import ConfigError, WebConfig
 from smc_mixer_daemon.web.api import Api, NotFoundError
+from smc_mixer_daemon.web.auth import AuthError
 
 log = logging.getLogger(__name__)
 
@@ -99,13 +100,16 @@ class Handler(BaseHTTPRequestHandler):
             data = json.loads(self.rfile.read(length))
         except ValueError as exc:
             return self.error(HTTPStatus.BAD_REQUEST, f"invalid JSON: {exc}")
-        self.api_call(lambda: self.server.api.put(path, data))
+        token = self.headers.get("X-SMC-Token")
+        self.api_call(lambda: self.server.api.put(path, data, token))
 
     def api_call(self, call: Any) -> None:
         try:
             self.reply_json(HTTPStatus.OK, call())
         except NotFoundError:
             self.error(HTTPStatus.NOT_FOUND, "not found")
+        except AuthError as exc:
+            self.error(HTTPStatus.FORBIDDEN, str(exc))
         except ConfigError as exc:
             self.error(HTTPStatus.BAD_REQUEST, str(exc))
         except (BackendError, OSError) as exc:

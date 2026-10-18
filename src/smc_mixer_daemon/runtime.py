@@ -18,6 +18,7 @@ from smc_mixer_daemon.status import Board, BoardHandler, describe
 from smc_mixer_daemon.subscription import Subscription
 from smc_mixer_daemon.web import server as web_server
 from smc_mixer_daemon.web.api import Api
+from smc_mixer_daemon.web.auth import ensure_token
 
 log = logging.getLogger(__name__)
 
@@ -132,7 +133,11 @@ def run(config_path: Path, config: Config, stop: threading.Event) -> None:
     logging.getLogger("smc_mixer_daemon").addHandler(handler)
     subscription = Subscription()
     subscription.start()
-    web = web_server.start(config.web, Api(board, config_path)) if config.web.enabled else None
+    web = None
+    if config.web.enabled:
+        token_file = config_path.parent / "web-token"
+        api = Api(board, config_path, token=ensure_token(token_file), token_file=token_file)
+        web = web_server.start(config.web, api)
     try:
         while not stop.is_set():
             board.reload.clear()

@@ -12,7 +12,25 @@ const model = {
   devices: { devices: [], players: [], player_error: null },
   selected: { kind: "strip", id: 1 },
   offline: false,
+  token: "",
+  tokenFile: null,
 };
+
+function storeToken(text) {
+  try {
+    sessionStorage.setItem("smc-token", text);
+  } catch {
+    // Storage can be unavailable (private window); the token then stays only in memory.
+  }
+}
+
+function loadToken() {
+  try {
+    return sessionStorage.getItem("smc-token") || "";
+  } catch {
+    return "";
+  }
+}
 
 async function request(path, options) {
   const response = await fetch(path, options);
@@ -29,7 +47,12 @@ const fromConfig = (config) => ({
     return row ? { kind: row.kind, name: row.name, label: row.label || "" } : null;
   }),
   knobs: Object.fromEntries(config.knobs.map((k) => [k.knob, { action: k.action, channel: k.channel, step: k.step }])),
-  buttons: Object.fromEntries(config.buttons.map((b) => [b.button, { action: b.action, channel: b.channel, led: b.led }])),
+  buttons: Object.fromEntries(
+    config.buttons.map((b) => [
+      b.button,
+      { action: b.action, channel: b.channel, led: b.led, command: b.command, release_command: b.release_command },
+    ]),
+  ),
 });
 
 const payload = (draft) => ({
@@ -41,7 +64,14 @@ const payload = (draft) => ({
     .map(([knob, k]) => ({ knob: Number(knob), action: k.action, channel: k.channel, step: k.step })),
   buttons: Object.entries(draft.buttons)
     .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([button, b]) => ({ button, action: b.action, channel: b.channel, led: b.led })),
+    .map(([button, b]) => ({
+      button,
+      action: b.action,
+      channel: b.channel,
+      led: b.led,
+      command: b.action === "shell" ? b.command || "" : null,
+      release_command: b.action === "shell" && (b.release_command || "").trim() ? b.release_command : null,
+    })),
 });
 
 const isDirty = () => JSON.stringify(payload(model.draft)) !== JSON.stringify(payload(model.saved));
@@ -123,6 +153,15 @@ const handlers = {
         for (const [key, k] of Object.entries(draft.knobs)) if (k.channel === channel) delete draft.knobs[key];
       }
     }),
+  command: (name, key, text) => {
+    // Typing must not rebuild the editor (focus), so only the draft and the cards update.
+    model.draft.buttons[name][key] = text;
+    renderLive();
+  },
+  token: (text) => {
+    model.token = text;
+    storeToken(text);
+  },
   knob: (n, patch) =>
     edit((draft) => {
       const next = { action: "none", channel: null, step: 2, ...draft.knobs[n], ...patch };
@@ -145,6 +184,8 @@ const handlers = {
       if (patch.action && patch.action !== (draft.buttons[name] || {}).action) next.led = "active";
       if (next.action === "none" || !hasLed(name)) next.led = "off";
       if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt", "out_mute", "play", "pause", "play_pause"].includes(next.action)) next.led = "off";
+      if (next.action === "shell") next.command = next.command ?? "";
+      else Object.assign(next, { command: null, release_command: null });
       draft.buttons[name] = next;
     }),
   global: (fn) => edit(fn),
@@ -174,7 +215,7 @@ async function refreshDevices() {
 
 async function save() {
   try {
-    model.saved = fromConfig(await request("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload(model.draft)) }));
+    model.saved = fromConfig(await request("/api/config", { method: "PUT", headers: { "Content-Type": "application/json", "X-SMC-Token": model.token }, body: JSON.stringify(payload(model.draft)) }));
     model.draft = clone(model.saved);
     banner("");
   } catch (error) {
@@ -205,7 +246,10 @@ async function start() {
     renderAll();
   });
   try {
-    model.saved = fromConfig(await request("/api/config"));
+    const config = await request("/api/config");
+    model.tokenFile = config.token_file;
+    model.token = loadToken();
+    model.saved = fromConfig(config);
     model.draft = clone(model.saved);
   } catch (error) {
     banner(`Konfiguration konnte nicht geladen werden: ${error.message}`);

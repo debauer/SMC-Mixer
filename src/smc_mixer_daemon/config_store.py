@@ -31,7 +31,12 @@ def render(config: Config) -> str:
         lines += ["[[buttons]]", f"button = {quote(binding.button.name)}", f"action = {quote(binding.action)}"]
         if binding.channel is not None:
             lines.append(f"channel = {binding.channel}")
-        lines += [f"led = {quote(binding.led)}", ""]
+        lines.append(f"led = {quote(binding.led)}")
+        if binding.command is not None:
+            lines.append(f"command = {quote(binding.command)}")
+        if binding.release_command is not None:
+            lines.append(f"release_command = {quote(binding.release_command)}")
+        lines.append("")
     for knob in sorted(config.knobs, key=lambda row: row.knob):
         lines += ["[[knobs]]", f"knob = {knob.knob}", f"action = {quote(knob.action)}"]
         if knob.channel is not None:

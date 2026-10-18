@@ -44,6 +44,9 @@ class Actions:
         if action in MEDIA_ACTIONS:
             self.media(MEDIA_ACTIONS[action], binding.button)
             return
+        if action == "shell":
+            self.shell(binding, binding.command)
+            return
         # Audio actions need current topology, not state retained across device changes.
         self.c.refresh()
         if not self.c.ready or not self.c.snapshot:
@@ -134,7 +137,14 @@ class Actions:
             for device in devices:
                 self.c.audio.mute(device, device.name in keep)
 
+    def shell(self, binding: Binding, command: str | None) -> None:
+        if command and self.c.ready:
+            self.c.shell.start(binding.button.name, command)
+
     def release(self, binding: Binding) -> None:
+        if binding.action == "shell":
+            self.shell(binding, binding.release_command)
+            return
         if binding.action != "ptt" or not self.c.ready:
             return
         self.c.refresh()

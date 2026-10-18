@@ -130,7 +130,7 @@ def parse_buttons(entries: Any, strips: list[Strip]) -> tuple[Binding, ...]:
     channels = {strip.channel for strip in strips}
     bindings: list[Binding] = []
     for index, entry in enumerate(entries):
-        row = table(entry, {"button", "action", "channel", "led"}, f"buttons[{index}]")
+        row = table(entry, {"button", "action", "channel", "led", "command", "release_command"}, f"buttons[{index}]")
         try:
             bindings.append(parse_binding(row, f"buttons[{index}]", channels))
         except BindingError as exc:

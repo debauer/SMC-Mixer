@@ -216,7 +216,7 @@ def test_buttons_are_saved_through_the_api(web: tuple[int, Board, Path]) -> None
         "buttons": [{"button": "REC_1", "action": "mic_mute", "channel": None, "led": "active"}],
     }
     status, saved = call(port, "PUT", "/api/config", body)
-    assert status == 200 and saved["buttons"] == body["buttons"]
+    assert status == 200 and saved["buttons"] == [{**body["buttons"][0], "command": None, "release_command": None}]
     assert load(path).buttons[0].action == "mic_mute" and board.reload.is_set()
     body["buttons"] = [{"button": "MUTE_1", "action": "mic_mute", "channel": None, "led": "off"}]
     status, error = call(port, "PUT", "/api/config", body)
@@ -260,7 +260,7 @@ def test_strip_labels_round_trip_validate_and_publish() -> None:
     config = Config((Strip(1, "sink", "speakers", 'Boxen "links"'), Strip(2, "sink", "headset")))
     again = parse(tomllib.loads(config_store.render(config)))
     assert again.strips == (Strip(1, "sink", "speakers", 'Boxen "links"'), Strip(2, "sink", "headset", None))
-    assert Api.config_json(again)["strips"][0]["label"] == 'Boxen "links"'
+    assert Api(Board(), Path("x"), FakeAudio).config_json(again)["strips"][0]["label"] == 'Boxen "links"'
     assert describe(None, None, again)["strips"][0]["label"] == 'Boxen "links"'
     base = {"strips": [{"channel": 1, "kind": "sink", "name": "x", "label": ""}]}
     base["strips"][0]["label"] = None  # type: ignore[assignment]

@@ -74,11 +74,11 @@ port = 8765
 ```
 
 The `[web]` table is optional, read at startup and cannot be changed from the page;
-restart the daemon after editing it. The interface has no authentication and no
-shell-command features. It binds to loopback by default and rejects requests with a
+restart the daemon after editing it. The interface has no login. It binds to loopback by default and rejects requests with a
 foreign `Host` or `Origin` header and non-JSON writes, so other web pages cannot
 change the configuration through your browser. If you bind to another address, anyone
-who can reach it can edit the configuration; the daemon logs a warning.
+who can reach it can edit the configuration (but not the shell commands, see below); the
+daemon logs a warning.
 
 ## Controls
 
@@ -160,6 +160,7 @@ channel = 1
 | `mute_ch`, `select_ch` | Same as the strip's M / SELECT for `channel` | muted / default device |
 | `mic_mute` | Mute all inputs (monitor sources excluded); pressing again unmutes them except those that were already muted before | all inputs muted |
 | `out_mute` | Mute all outputs; pressing again unmutes them except those that were already muted before | all outputs muted |
+| `shell` | Run `command` with `/bin/sh -c` on press and optionally `release_command` on release; see below | - |
 | `ptt` | Unmute all inputs while held, mute them on release | held |
 | `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
 | `play_pause`, `play`, `pause` | MPRIS on the configured player | playing / playing / paused |
@@ -193,6 +194,31 @@ action = "vol_out"  # default output; vol_in: default input
 
 A knob changes the device volume without moving the fader. In direct mode the next fader
 movement takes over again; with `soft_takeover` the fader blinks until it catches up.
+
+### Shell commands
+
+A button with `action = "shell"` runs its `command` through `/bin/sh -c` (and, optionally,
+`release_command` on release), as your user, in your home directory. Commands run on a
+background thread, so they never block the mixer; stdin is closed, stdout and stderr are
+captured, and a nonzero exit code is logged with the last output. A command still running
+after 30 seconds is killed together with everything it started (use `&` or `setsid` inside
+the command if something must outlive that), at most 8 run at once, and running commands are
+killed when the daemon stops. No `led = "active"` (shell commands have no state).
+
+```toml
+[[buttons]]
+button = "REC_5"
+action = "shell"
+command = "notify-send 'Hello'"
+release_command = "true"   # optional
+```
+
+Anything that can write `config.toml` can already run code as you. The web interface is
+another way to write it, so changing shell commands over HTTP needs an access token: the
+daemon creates `web-token` (mode 0600) next to `config.toml` and the page asks for its
+contents once per browser session (it is never sent to the page). Other settings need no
+token, and unchanged commands are kept without one. Changes to commands are made over HTTP
+only with that token, so other local users and web pages cannot add commands.
 
 ## Install a user service
 
