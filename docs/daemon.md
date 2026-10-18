@@ -50,7 +50,31 @@ The default configuration path is
 `~/.config/smc-mixer-daemon/config.toml` when that variable is unset. Pass
 `check --config PATH` or `run --config PATH` to override it. Unknown keys,
 duplicate device/channel assignments and invalid values are rejected. Restart
-the daemon after configuration changes.
+the daemon after editing the file by hand; saving from the web interface reloads it.
+
+## Web interface
+
+`run` also serves a local web interface, by default at <http://127.0.0.1:8765/>.
+It shows the mixer connection and mode, all eight strips (device volume, physical
+fader position, M/S LEDs, soft-takeover state) and the daemon's recent log, and it
+edits the strip assignments, soft takeover and media player. **Save** validates the
+configuration, rewrites `config.toml` (comments in the file are not preserved) and
+reloads the daemon in-process; the mixer is briefly released and re-initialized.
+The device and player lists come live from `pactl` and `playerctl`.
+
+```toml
+[web]
+enabled = true      # false disables the interface
+host = "127.0.0.1"  # loopback only by default
+port = 8765
+```
+
+The `[web]` table is optional, read at startup and cannot be changed from the page;
+restart the daemon after editing it. The interface has no authentication and no
+shell-command features. It binds to loopback by default and rejects requests with a
+foreign `Host` or `Origin` header and non-JSON writes, so other web pages cannot
+change the configuration through your browser. If you bind to another address, anyone
+who can reach it can edit the configuration; the daemon logs a warning.
 
 ## Controls
 

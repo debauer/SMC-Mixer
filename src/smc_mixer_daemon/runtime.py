@@ -5,15 +5,19 @@ import threading
 import time
 from collections.abc import Callable
 from itertools import islice
+from pathlib import Path
 
-from smc_mixer import DeviceMode, SmcMixer, SmcMixerError
+from smc_mixer import ButtonEvent, DeviceMode, SmcMixer, SmcMixerError
 from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
-from smc_mixer_daemon.config import Config
+from smc_mixer_daemon.config import Config, ConfigError, load
 from smc_mixer_daemon.controller import Controller
 from smc_mixer_daemon.inbox import Inbox
 from smc_mixer_daemon.media import Media
+from smc_mixer_daemon.status import Board, BoardHandler, describe
 from smc_mixer_daemon.subscription import Subscription
+from smc_mixer_daemon.web import server as web_server
+from smc_mixer_daemon.web.api import Api
 
 log = logging.getLogger(__name__)
 
@@ -34,17 +38,19 @@ class Notices:
             self.last[area] = message, time.monotonic()
 
 
-def control_loop(config: Config, stop: threading.Event, subscription: Subscription) -> None:
+def control_loop(config: Config, stop: threading.Event, subscription: Subscription, board: Board | None = None) -> None:
+    """Run until stopped or until `board.reload` asks for a restart with a new configuration."""
+    board = board or Board(config)
     audio = Audio()
     media = Media(config.player) if config.player else None
     notices = Notices()
     mixer: SmcMixer | None = None
     controller: Controller | None = None
     inbox = Inbox()
-    next_connect = next_initialize = next_audio = 0.0
+    next_connect = next_initialize = next_audio = next_publish = 0.0
     audio_delay = 1.0
     try:
-        while not stop.is_set():
+        while not stop.is_set() and not board.reload.is_set():
             tick = time.monotonic()
             if mixer is None and tick >= next_connect:
                 try:
@@ -88,6 +94,8 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                         for event in events:
                             if inbox.generation != generation or stop.is_set():
                                 break
+                            if isinstance(event, ButtonEvent) and event.pressed and not event.ambiguous:
+                                board.note("event", f"{event.button.name} pressed")
                             controller.event(event)
                     controller.feedback()
                 except BackendError as exc:
@@ -99,6 +107,9 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                     notices.error("mixer control", exc)
                     controller.suspend()
                     next_initialize = time.monotonic() + 2
+            if tick >= next_publish:
+                board.publish(describe(mixer, controller, config))
+                next_publish = tick + 0.2
             stop.wait(max(0, 0.025 - (time.monotonic() - tick)))
     finally:
         try:
@@ -109,10 +120,28 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                 mixer.close()
 
 
-def run(config: Config, stop: threading.Event) -> None:
+def run(config_path: Path, config: Config, stop: threading.Event) -> None:
+    board = Board(config)
+    handler = BoardHandler(board)
+    logging.getLogger("smc_mixer_daemon").addHandler(handler)
     subscription = Subscription()
     subscription.start()
+    web = web_server.start(config.web, Api(board, config_path)) if config.web.enabled else None
     try:
-        control_loop(config, stop, subscription)
+        while not stop.is_set():
+            board.reload.clear()
+            board.config = config
+            control_loop(config, stop, subscription, board)
+            if board.reload.is_set() and not stop.is_set():
+                try:
+                    config = load(config_path)
+                except ConfigError as exc:
+                    log.error("reload failed, keeping previous configuration: %s", exc)
+                else:
+                    log.info("configuration reloaded")
     finally:
+        if web:
+            web[0].shutdown()
+            web[0].server_close()
         subscription.close()
+        logging.getLogger("smc_mixer_daemon").removeHandler(handler)

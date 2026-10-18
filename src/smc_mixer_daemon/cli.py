@@ -66,7 +66,7 @@ def main() -> int:
         stop = threading.Event()
         previous = {sig: signal.signal(sig, lambda _sig, _frame: stop.set()) for sig in (signal.SIGINT, signal.SIGTERM)}
         try:
-            run(config, stop)
+            run(args.config, config, stop)
         finally:
             for sig, handler in previous.items():
                 signal.signal(sig, handler)

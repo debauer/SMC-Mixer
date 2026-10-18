@@ -2,7 +2,7 @@
 
 import os
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -19,10 +19,18 @@ class Strip:
 
 
 @dataclass(frozen=True)
+class WebConfig:
+    enabled: bool = True
+    host: str = "127.0.0.1"
+    port: int = 8765
+
+
+@dataclass(frozen=True)
 class Config:
     strips: tuple[Strip, ...]
     soft_takeover: bool = False
     player: str | None = None
+    web: WebConfig = field(default_factory=WebConfig)
 
 
 def default_path() -> Path:
@@ -50,7 +58,24 @@ def load(path: Path) -> Config:
             raw = tomllib.load(stream)
     except (OSError, tomllib.TOMLDecodeError) as exc:
         raise ConfigError(f"{path}: {exc}") from exc
-    table(raw, {"daemon", "media", "strips"}, "configuration")
+    return parse(raw)
+
+
+def parse_web(value: Any) -> WebConfig:
+    row = table(value, {"enabled", "host", "port"}, "web")
+    default = WebConfig()
+    enabled = row.get("enabled", default.enabled)
+    if type(enabled) is not bool:
+        raise ConfigError("web.enabled: expected true or false")
+    host = name(row.get("host", default.host), "web.host")
+    port = row.get("port", default.port)
+    if type(port) is not int or not 1 <= port <= 65535:
+        raise ConfigError("web.port: expected an integer from 1 to 65535")
+    return WebConfig(enabled, host, port)
+
+
+def parse(raw: dict[str, Any]) -> Config:
+    table(raw, {"daemon", "media", "strips", "web"}, "configuration")
     daemon = table(raw.get("daemon", {}), {"soft_takeover"}, "daemon")
     soft = daemon.get("soft_takeover", False)
     if type(soft) is not bool:
@@ -80,4 +105,5 @@ def load(path: Path) -> Config:
         raise ConfigError("strips: duplicate device assignment")
     if not strips and player is None:
         raise ConfigError("configure at least one strip or a media player")
-    return Config(tuple(strips), soft, player)
+    web = parse_web(raw["web"]) if "web" in raw else WebConfig()
+    return Config(tuple(strips), soft, player, web)
