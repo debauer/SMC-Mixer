@@ -1,7 +1,6 @@
 import { ACTIONS, effective, fixedBy, hasLed, ROWS, TRANSPORT } from "./buttons.js";
 import { mqttGroup } from "./mqtt_editor.js";
 import { el } from "./dom.js";
-import { tokenField } from "./token_field.js";
 
 const segment = (options, current, pick) =>
   el(
@@ -33,7 +32,6 @@ function shellEditor(model, name, binding, handlers) {
     { class: "group" },
     field("command", "COMMAND (/bin/sh -c)", 4, binding.command, "e.g. notify-send Hello", (text) => handlers.command(name, "command", text)),
     field("release", "COMMAND ON RELEASE (OPTIONAL)", 2, binding.release_command, "optional", (text) => handlers.command(name, "release_command", text)),
-    tokenField(model, handlers, "Required to save changed commands, so other programs on this computer cannot inject commands. Find it in"),
   );
 }
 

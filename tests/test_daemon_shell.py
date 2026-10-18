@@ -1,9 +1,6 @@
-"""Shell actions: execution, limits, token-guarded configuration and validation."""
+"""Shell actions: execution, limits, configuration and validation."""
 
 import logging
-import os
-import stat
-import threading
 import time
 import tomllib
 from collections.abc import Callable
@@ -20,7 +17,6 @@ from smc_mixer_daemon.controller import Controller
 from smc_mixer_daemon.shell import ShellRunner
 from smc_mixer_daemon.status import Board
 from smc_mixer_daemon.web.api import Api
-from smc_mixer_daemon.web.auth import AuthError, ensure_token
 
 
 def wait_for(condition: Callable[[], bool], seconds: float = 5.0) -> None:
@@ -132,11 +128,6 @@ def test_multiline_commands_survive_toml_round_trip() -> None:
     assert again.buttons[0].command == command and again.buttons[0].release_command == "true"
 
 
-def api(tmp_path: Path, token: str | None = "secret") -> Api:
-    board = Board(Config((Strip(1, "sink", "speakers"),)))
-    return Api(board, tmp_path / "c.toml", FakeAudio, token=token, token_file=tmp_path / "web-token")
-
-
 SHELL = {
     "soft_takeover": False,
     "player": None,
@@ -145,57 +136,8 @@ SHELL = {
 }
 
 
-def test_changing_shell_commands_needs_the_token(tmp_path: Path) -> None:
-    service = api(tmp_path)
-    for token in (None, "", "wrong"):
-        with pytest.raises(AuthError):
-            service.put("/api/config", SHELL, token)
-    assert not (tmp_path / "c.toml").exists()
-    saved = service.put("/api/config", SHELL, "secret")
-    assert saved["buttons"][0]["command"] == "touch x" and saved["token_file"].endswith("web-token")
+def test_shell_commands_can_be_saved_over_the_api(tmp_path: Path) -> None:
+    service = Api(Board(Config((Strip(1, "sink", "speakers"),))), tmp_path / "c.toml", FakeAudio)
+    saved = service.put("/api/config", SHELL)
+    assert saved["buttons"][0]["command"] == "touch x" and "token_file" not in saved
     assert service.board.reload.is_set()
-
-
-def test_unchanged_commands_and_other_edits_need_no_token(tmp_path: Path) -> None:
-    service = api(tmp_path)
-    service.put("/api/config", SHELL, "secret")
-    service.put("/api/config", {**SHELL, "soft_takeover": True}, None)  # same commands: allowed without token
-    with pytest.raises(AuthError):
-        service.put("/api/config", {**SHELL, "buttons": [{**SHELL["buttons"][0], "command": "rm x"}]}, None)  # type: ignore[index]
-    with pytest.raises(AuthError):
-        service.put("/api/config", {**SHELL, "buttons": []}, None)  # removing a command is a change too
-
-
-def test_without_a_configured_token_shell_cannot_be_changed_over_http(tmp_path: Path) -> None:
-    with pytest.raises(AuthError, match="no access token"):
-        api(tmp_path, token=None).put("/api/config", SHELL, "anything")
-
-
-def test_token_file_is_private_stable_and_random(tmp_path: Path) -> None:
-    path = tmp_path / "dir" / "web-token"
-    token = ensure_token(path)
-    assert len(token) >= 24 and ensure_token(path) == token
-    assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
-    assert ensure_token(tmp_path / "other") != token
-
-
-def test_http_passes_the_token_header(tmp_path: Path) -> None:
-    import json
-    from http.client import HTTPConnection
-
-    from smc_mixer_daemon.config import WebConfig
-    from smc_mixer_daemon.web import server
-
-    instance = server.Server(WebConfig(port=0), api(tmp_path))
-    threading.Thread(target=instance.serve_forever, daemon=True).start()
-    try:
-        results = []
-        for token in (None, "secret"):
-            connection = HTTPConnection("127.0.0.1", instance.server_address[1])
-            headers = {"Content-Type": "application/json", **({"X-SMC-Token": token} if token else {})}
-            connection.request("PUT", "/api/config", json.dumps(SHELL), headers)
-            results.append(connection.getresponse().status)
-        assert results == [403, 200]
-    finally:
-        instance.shutdown()
-        instance.server_close()

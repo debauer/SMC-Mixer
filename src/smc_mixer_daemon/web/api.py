@@ -1,7 +1,6 @@
 """JSON endpoints of the web interface; transport-independent so they can be tested directly."""
 
 from collections.abc import Callable
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -10,18 +9,7 @@ from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config
 from smc_mixer_daemon.media import Media
-from smc_mixer_daemon.mqtt_config import MqttConfig
 from smc_mixer_daemon.status import Board
-from smc_mixer_daemon.web.auth import AuthError, check
-
-
-def commands(config: Config) -> set[tuple[str, str | None, str | None]]:
-    return {(b.button.name, b.command, b.release_command) for b in config.buttons if b.action == "shell"}
-
-
-def broker(config: Config) -> MqttConfig:
-    """Everything of the MQTT table except the ignore list, which anyone may edit."""
-    return replace(config.mqtt, ignore=())
 
 
 class NotFoundError(LookupError):
@@ -35,11 +23,8 @@ class Api:
         config_path: Path,
         audio: Callable[[], Audio] = Audio,
         media: Callable[[], Media] = lambda: Media(""),
-        token: str | None = None,
-        token_file: Path | None = None,
     ) -> None:
         self.board, self.config_path, self.audio, self.media = board, config_path, audio, media
-        self.token, self.token_file = token, token_file
 
     def running(self) -> Config:
         config = self.board.config
@@ -56,15 +41,11 @@ class Api:
             return self.devices()
         raise NotFoundError(path)
 
-    def put(self, path: str, data: Any, token: str | None = None) -> dict[str, Any]:
+    def put(self, path: str, data: Any) -> dict[str, Any]:
         if path != "/api/config":
             raise NotFoundError(path)
         running = self.running()
         config = config_store.from_json(data, running)
-        if commands(config) != commands(running) or broker(config) != broker(running):
-            if self.token is None:
-                raise AuthError("shell commands and MQTT settings cannot be changed over HTTP: no access token")
-            check(self.token, token)
         config_store.save(self.config_path, config)
         self.board.config = config
         self.board.reload.set()
@@ -73,7 +54,6 @@ class Api:
 
     def config_json(self, config: Config) -> dict[str, Any]:
         return {
-            "token_file": str(self.token_file) if self.token_file else None,
             "soft_takeover": config.soft_takeover,
             "mqtt": {
                 "enabled": config.mqtt.enabled,

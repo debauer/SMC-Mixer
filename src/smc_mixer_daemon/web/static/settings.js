@@ -1,5 +1,4 @@
 import { el } from "./dom.js";
-import { tokenField } from "./token_field.js";
 
 const check = (title, note, checked, onchange) =>
   el(
@@ -45,6 +44,5 @@ export function renderSettings(container, model, handlers) {
       mqtt.password_set && check("Remove the stored password", null, mqtt.clear_password, (on) => reset({ clear_password: on })),
       text("mqtt-prefix", "TOPIC PREFIX", mqtt.prefix, "text", "smc", (value) => set({ prefix: value })),
     ),
-    el("div", { class: "group" }, tokenField(model, handlers, "Required to save broker settings, so other programs on this computer cannot redirect your data. Find it in")),
   );
 }

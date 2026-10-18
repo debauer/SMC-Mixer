@@ -15,25 +15,7 @@ const model = {
   selected: { kind: "strip", id: 1 },
   offline: false,
   page: "main",
-  token: "",
-  tokenFile: null,
 };
-
-function storeToken(text) {
-  try {
-    sessionStorage.setItem("smc-token", text);
-  } catch {
-    // Storage can be unavailable (private window); the token then stays only in memory.
-  }
-}
-
-function loadToken() {
-  try {
-    return sessionStorage.getItem("smc-token") || "";
-  } catch {
-    return "";
-  }
-}
 
 async function request(path, options) {
   const response = await fetch(path, options);
@@ -141,10 +123,6 @@ const handlers = {
     model.draft.buttons[name][key] = text;
     renderLive();
   },
-  token: (text) => {
-    model.token = text;
-    storeToken(text);
-  },
   knob: (n, patch) =>
     edit((draft) => {
       const next = { action: "none", channel: null, step: 2, ...draft.knobs[n], ...patch };
@@ -209,7 +187,7 @@ async function refreshDevices() {
 
 async function save() {
   try {
-    model.saved = fromConfig(await request("/api/config", { method: "PUT", headers: { "Content-Type": "application/json", "X-SMC-Token": model.token }, body: JSON.stringify(payload(model.draft)) }));
+    model.saved = fromConfig(await request("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload(model.draft)) }));
     model.draft = clone(model.saved);
     banner("");
   } catch (error) {
@@ -245,8 +223,6 @@ async function start() {
   });
   try {
     const config = await request("/api/config");
-    model.tokenFile = config.token_file;
-    model.token = loadToken();
     model.saved = fromConfig(config);
     model.draft = clone(model.saved);
   } catch (error) {

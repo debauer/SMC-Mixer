@@ -13,7 +13,6 @@ from smc_mixer_daemon.mqtt import Mqtt
 from smc_mixer_daemon.mqtt_config import MqttConfig
 from smc_mixer_daemon.status import Board, describe
 from smc_mixer_daemon.web.api import Api
-from smc_mixer_daemon.web.auth import AuthError
 from test_daemon_mqtt import OK, REFUSED, FakeClient
 
 STRIPS = (Strip(1, "sink", "speakers"),)
@@ -26,7 +25,7 @@ BROKER = {"enabled": True, "host": "broker", "port": 1884, "username": "me", "tl
 
 
 def api(tmp_path: Path, mqtt: MqttConfig | None = None) -> Api:
-    return Api(Board(Config(STRIPS, mqtt=mqtt or MqttConfig())), tmp_path / "c.toml", FakeAudio, token="secret")
+    return Api(Board(Config(STRIPS, mqtt=mqtt or MqttConfig())), tmp_path / "c.toml", FakeAudio)
 
 
 def test_config_json_reports_settings_but_never_the_password(tmp_path: Path) -> None:
@@ -44,21 +43,12 @@ def test_config_json_reports_settings_but_never_the_password(tmp_path: Path) -> 
     assert "hunter2" not in str(service.get("/api/config"))
 
 
-def test_broker_changes_need_the_token_but_the_ignore_list_does_not(tmp_path: Path) -> None:
+def test_broker_settings_and_ignore_list_are_saved(tmp_path: Path) -> None:
     service = api(tmp_path)
-    for token in (None, "wrong"):
-        with pytest.raises(AuthError):
-            service.put("/api/config", {**BASE, "mqtt": BROKER}, token)
-    assert not (tmp_path / "c.toml").exists()
-    service.put("/api/config", {**BASE, "mqtt": {**BROKER, "password": "pw"}}, "secret")
-    saved = load(tmp_path / "c.toml").mqtt
-    assert saved == MqttConfig(True, "broker", 1884, "me", "pw", True, "home/smc")
-    service.put("/api/config", {**BASE, "mqtt": BROKER, "mqtt_ignore": ["KNOB_1"]}, None)  # same broker settings
-    assert load(tmp_path / "c.toml").mqtt.ignore == ("KNOB_1",)
-    with pytest.raises(AuthError):
-        service.put("/api/config", {**BASE, "mqtt": {**BROKER, "host": "elsewhere"}}, None)
-    with pytest.raises(AuthError):
-        service.put("/api/config", {**BASE, "mqtt": {**BROKER, "password": "other"}}, None)
+    service.put("/api/config", {**BASE, "mqtt": {**BROKER, "password": "pw"}})
+    assert load(tmp_path / "c.toml").mqtt == MqttConfig(True, "broker", 1884, "me", "pw", True, "home/smc")
+    service.put("/api/config", {**BASE, "mqtt": BROKER, "mqtt_ignore": ["KNOB_1"]})
+    assert load(tmp_path / "c.toml").mqtt.ignore == ("KNOB_1",) and load(tmp_path / "c.toml").mqtt.password == "pw"
 
 
 def test_password_is_kept_replaced_or_removed() -> None:
