@@ -1,0 +1,156 @@
+# Linux audio and media daemon
+
+`smc-mixer-daemon` connects the SMC-Mixer to PipeWire's PulseAudio-compatible
+interface and an explicitly selected MPRIS player. It runs in your user session.
+
+## Requirements
+
+- Linux, PipeWire with `pipewire-pulse`, and access to the user's audio server.
+- `pactl` (usually `libpulse` or `pulseaudio-utils`) and, for media control,
+  `playerctl` in PATH. No additional Python dependencies are needed.
+- A connected SMC-Mixer in **DAW mode**, running verified firmware **011**.
+  Unknown/unsupported state or USER mode suspends control rather than guessing.
+- For YouTube/Qobuz, a browser/client that exposes its playback through MPRIS
+  on the same session D-Bus. Test your actual client; not all clients support it.
+
+## Configure and run
+
+From the checkout:
+
+```sh
+uv sync --python 3.12
+uv run smc-mixer-daemon devices
+mkdir -p ~/.config/smc-mixer-daemon
+cp contrib/config.example.toml ~/.config/smc-mixer-daemon/config.toml
+```
+
+Edit the copied file. Assign up to eight strips using the displayed **device
+names**, not numeric IDs. `sink` means output, `source` means input. Omitted
+channels are inactive; missing devices are never replaced with another device.
+Monitor sources are hidden from `devices` but can be assigned explicitly.
+
+The example contains placeholder audio names and must be edited. Set
+`media.player` to a player from `playerctl --list-all`, or remove `[media]` to
+disable media integration. A base name such as `firefox` may resolve to one
+`firefox.instance...` player; multiple matches are rejected. Use the full name
+to distinguish multiple instances. Resolution is repeated for each button press.
+
+```sh
+uv run smc-mixer-daemon check
+uv run smc-mixer-daemon run
+```
+
+Both `devices` and `check` are read-only: they do not open MIDI ports or change
+audio, LEDs or playback. `check` reports unavailable assignments/player/server
+with exit code 1 and invalid configuration/missing required executables with 2.
+`run` waits for missing hardware and recovers after audio-server or mixer loss.
+
+The default configuration path is
+`$XDG_CONFIG_HOME/smc-mixer-daemon/config.toml`, or
+`~/.config/smc-mixer-daemon/config.toml` when that variable is unset. Pass
+`check --config PATH` or `run --config PATH` to override it. Unknown keys,
+duplicate device/channel assignments and invalid values are rejected. Restart
+the daemon after configuration changes.
+
+## Controls
+
+| Control | Action |
+|---|---|
+| Fader | Assigned device volume, 0-100%; all device channels linked |
+| M | Toggle mute; its LED reflects actual mute state |
+| S on an output strip | Select default output and move all current playback streams there |
+| S on an input strip | Select default input, without explicitly moving active recordings |
+| S LED | Device is the current default of its kind (input/output independently) |
+| Play | Play/resume the configured MPRIS player |
+| Physical Pause (MCU STOP) | Pause the configured MPRIS player |
+| R, SELECT, other transport/navigation controls, knobs | Unassigned |
+
+Buttons act once per press, not again on release. Fader changes do not unmute.
+Changes made through desktop controls update M/S LEDs. Other button LEDs are off.
+
+### Direct faders and optional soft takeover
+
+By default, **startup and reconnection apply the physical fader positions to
+assigned devices immediately**. Returning to DAW mode, audio-server recovery or
+an assigned device appearing also triggers a fresh-position initialization.
+Mute/default states are read from the system and are not reset at startup.
+
+Physical 0-127 maps to rounded percentage 0-100. Volume changes from other apps
+are not continuously overwritten: the next fader movement takes direct control.
+Pending fader updates are coalesced in 25 ms loop batches, with button ordering
+preserved. Actual latency also depends on audio commands and device response.
+
+To enable pickup instead:
+
+```toml
+[daemon]
+soft_takeover = true
+```
+
+Startup/reconnect then reads system volume without applying faders. A fader takes
+ownership when it crosses the current volume or reaches within one percentage
+point. The corresponding knob LED blinks while waiting. External volume changes
+re-arm pickup; recognized acknowledgments of the daemon's own writes do not.
+Targets above 100% clamp to 100%, since hardware control is limited to 0-100%.
+Self-write recognition uses a two-second acknowledgment window; identical
+concurrent external writes cannot be distinguished from those acknowledgments.
+
+### Output routing details
+
+S sets the default sink first, then moves PulseAudio-visible playback streams
+from all outputs. A bounded second pass catches streams appearing during the
+switch. The daemon does not permanently enforce routing; applications/session
+policy can route future streams differently. Native PipeWire links outside
+`pipewire-pulse` are not managed.
+
+A stream can disappear or reject a move. Other moves continue; remaining failed
+moves are logged. There is no atomic rollback. The S LED reports the actual
+default output, not whether every stream was successfully moved. Input S does
+not migrate recording streams or convert an input device into a playback stream.
+
+## Install a user service
+
+For an executable independent of the checkout's development environment:
+
+```sh
+uv tool install --python 3.12 /absolute/path/to/m-wave_smc-mixer
+```
+
+The supplied service assumes the resulting executable is
+`~/.local/bin/smc-mixer-daemon`. Adjust `ExecStart` to your installation's absolute
+path if needed. The unit uses `%h` for your home directory. Ensure `pactl` and
+`playerctl` are in the service's PATH; adjust it for distributions with other
+binary locations. For custom configuration, append `--config /absolute/path`
+after `run`, or set `XDG_CONFIG_HOME` in the unit.
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp contrib/systemd/smc-mixer-daemon.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now smc-mixer-daemon.service
+systemctl --user status smc-mixer-daemon.service
+journalctl --user -u smc-mixer-daemon.service -f
+```
+
+Use your desktop session's audio server and D-Bus; do not install it as a root
+service. It waits if the mixer is absent. Runtime failures restart the service;
+configuration errors (exit 2) require correction and an explicit restart.
+
+```sh
+systemctl --user restart smc-mixer-daemon.service
+systemctl --user disable --now smc-mixer-daemon.service
+```
+
+SIGTERM/Ctrl+C stops child processes, clears daemon LED feedback where reachable
+and closes MIDI ports. Shutdown does not restore previous volume, mute or routing.
+
+## Verification
+
+Automated tests use simulated MIDI devices and command adapters, including
+startup/direct faders, optional pickup, external state, routing, missing devices,
+media failure isolation, read-only commands and subscription-child cleanup.
+
+Hardware acceptance still needs the user's desktop: two outputs, one input,
+simultaneous browser/music playback, actual YouTube/Qobuz MPRIS support,
+hotplug, audio-server restart, direct/pickup initialization and the user service.
+See [hardware constraints](control.md#limitations) and [library API](api.md).

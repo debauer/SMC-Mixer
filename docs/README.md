@@ -9,6 +9,7 @@ library or monitor example.
 |---|---|
 | [Library API](api.md) | Connections, cached state, explicit reads, events, LEDs, threads, errors and reconnect |
 | [Tools](tools.md) | Live monitor, CLI diagnostics, guided measurements and offline firmware workflow |
+| [Linux daemon](daemon.md) | Audio volume, mute, default-device routing, MPRIS transport and user service |
 
 ## Technical references
 

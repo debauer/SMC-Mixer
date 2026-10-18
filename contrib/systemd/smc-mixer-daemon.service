@@ -1,0 +1,17 @@
+[Unit]
+Description=SMC-Mixer audio and media control
+Documentation=man:pactl(1) man:playerctl(1)
+
+[Service]
+Type=simple
+# Matches `uv tool install /absolute/path/to/m-wave_smc-mixer` with default paths.
+# Replace ExecStart if installed elsewhere. Config defaults to XDG_CONFIG_HOME.
+ExecStart=%h/.local/bin/smc-mixer-daemon run
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Restart=on-failure
+RestartSec=3
+RestartPreventExitStatus=2
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

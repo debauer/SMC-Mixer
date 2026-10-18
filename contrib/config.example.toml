@@ -1,0 +1,24 @@
+# Replace names using `smc-mixer-daemon devices`. Restart after editing.
+[daemon]
+# false: apply physical faders at startup/reconnect and immediately on movement.
+# true: wait for each fader to reach/cross its device's current volume.
+soft_takeover = false
+
+# Optional. Remove this table for audio-only operation.
+[media]
+player = "firefox"
+
+[[strips]]
+channel = 1
+kind = "sink"
+name = "REPLACE_WITH_SPEAKER_SINK_NAME"
+
+[[strips]]
+channel = 2
+kind = "sink"
+name = "REPLACE_WITH_HEADSET_SINK_NAME"
+
+[[strips]]
+channel = 3
+kind = "source"
+name = "REPLACE_WITH_MICROPHONE_SOURCE_NAME"

@@ -73,20 +73,22 @@ the other installed commands.
 
 ## Packages and documentation
 
-Both packages are installed together:
+The packages are installed together:
 
 | Package | Purpose |
 |---|---|
 | `smc_mixer` | Device access, state, MIDI events and LED commands |
 | `smc_mixer_tools` | Monitor, diagnostics, measurements and firmware tools |
+| `smc_mixer_daemon` | User-session Linux audio routing, volume and media control |
 
-The tools use the public library API. Source code lives under `src/`; no
+The tools and daemon use the public library API. Source code lives under `src/`; no
 Python wrappers are required in the repository root.
 
 | Guide | Contents |
 |---|---|
 | [Library API](docs/api.md) | State, events, polling, reconnects, errors and examples |
 | [Tools](docs/tools.md) | Monitor, diagnostics, guided measurements and offline firmware workflow |
+| [Linux daemon](docs/daemon.md) | PipeWire/PulseAudio controls, playback routing, MPRIS and systemd user service |
 | [Controls](docs/control.md) | DAW/USER mappings, LEDs, state tables and hardware limitations |
 | [USB and Sinco protocol](docs/usb-midi.md) | Ports, framing, packet layout and read commands |
 | [Firmware analysis](docs/firmware.md) | Firmware 013 findings, Jieli structures and PI32v2 disassembly |

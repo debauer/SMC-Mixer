@@ -59,6 +59,7 @@ def test_no_python_scripts_remain_in_repository_root() -> None:
         ("probe-mode", ["--help"]),
         ("unpack-fwsc", ["--help"]),
         ("analyze-fwsc", ["--help"]),
+        ("smc-mixer-daemon", ["--help"]),
     ],
 )
 def test_console_entry_points_work_from_another_directory(command: str, args: list[str], tmp_path: Path) -> None:
