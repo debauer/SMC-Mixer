@@ -61,6 +61,17 @@ h2.label.source { color: var(--source); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; }
 
 .channel { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: #090a0f; }
+.channel-knob { display: flex; }
+.knob { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: #0d0f16; }
+.knob:hover { border-color: #3a4058; }
+.dial { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line-strong); border-radius: 50%; background: #12141d; color: var(--muted); font-size: 14px; }
+.knob.used .dial { border-color: var(--source); color: var(--source); }
+.knob.selected { border-color: var(--source); background: var(--raised); box-shadow: 0 0 0 1px var(--source); }
+.knob.flash .dial { animation: knob-flash 0.8s ease-out; }
+@keyframes knob-flash { from { border-color: var(--warn); color: var(--warn); box-shadow: 0 0 16px var(--warn); } }
+@media (prefers-reduced-motion: reduce) { .knob.flash .dial { animation: none; } }
+.knob-label { font-size: 10px; line-height: 1.2; color: var(--muted); text-align: center; overflow-wrap: anywhere; }
+.knob.used .knob-label { color: var(--text); }
 .channel-keys { display: flex; flex-direction: column; gap: 4px; }
 .channel-keys .key { min-height: 40px; padding: 4px 6px; }
 .strips { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }

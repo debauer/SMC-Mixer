@@ -32,6 +32,11 @@ def render(config: Config) -> str:
         if binding.channel is not None:
             lines.append(f"channel = {binding.channel}")
         lines += [f"led = {quote(binding.led)}", ""]
+    for knob in sorted(config.knobs, key=lambda row: row.knob):
+        lines += ["[[knobs]]", f"knob = {knob.knob}", f"action = {quote(knob.action)}"]
+        if knob.channel is not None:
+            lines.append(f"channel = {knob.channel}")
+        lines += [f"step = {knob.step}", ""]
     return "\n".join(lines)
 
 
@@ -41,15 +46,16 @@ def from_json(data: Any, current: Config) -> Config:
         raise ConfigError("configuration: expected an object")
     soft = data.get("soft_takeover", False)
     raw: dict[str, Any] = {"daemon": {"soft_takeover": soft}, "strips": data.get("strips", [])}
-    if "buttons" in data:
-        raw["buttons"] = data["buttons"]
+    for key in ("buttons", "knobs"):
+        if key in data:
+            raw[key] = data[key]
     if data.get("player") is not None:
         raw["media"] = {"player": data["player"]}
-    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons"}
+    unknown = data.keys() - {"soft_takeover", "player", "strips", "buttons", "knobs"}
     if unknown:
         raise ConfigError(f"configuration: unknown keys: {', '.join(sorted(unknown))}")
     parsed = parse(raw)
-    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons)
+    return Config(parsed.strips, parsed.soft_takeover, parsed.player, current.web, parsed.buttons, parsed.knobs)
 
 
 def save(path: Path, config: Config) -> None:

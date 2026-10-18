@@ -7,7 +7,7 @@ from collections.abc import Callable
 from itertools import islice
 from pathlib import Path
 
-from smc_mixer import ButtonEvent, DeviceMode, MidiProtocol, SmcMixer, SmcMixerError
+from smc_mixer import ButtonEvent, DeviceMode, KnobEvent, MidiProtocol, SmcMixer, SmcMixerError
 from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config, ConfigError, load
@@ -73,6 +73,8 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                 for event in events:
                     if isinstance(event, ButtonEvent) and event.protocol == MidiProtocol.MCU and not event.ambiguous:
                         board.key(event.button.name, event.pressed)
+                    elif isinstance(event, KnobEvent) and event.protocol == MidiProtocol.MCU and event.delta:
+                        board.turn(event.knob, event.delta)
                 try:
                     if controller.generation != generation:
                         controller.suspend()

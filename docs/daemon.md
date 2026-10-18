@@ -92,7 +92,7 @@ who can reach it can edit the configuration; the daemon logs a warning.
 | Play | Play/resume the configured MPRIS player; LED on while it is playing |
 | Physical Pause (MCU STOP) | Pause the configured MPRIS player; LED on while it is paused |
 | All other buttons (R, S/SOLO, Bank, transport, navigation, and M/SELECT of unassigned strips) | Unassigned until bound, see below |
-| Knobs | Unassigned |
+| Knobs | Unassigned until bound, see below |
 
 Buttons act once per press, not again on release (Push-to-Talk also acts on release). Fader changes do not unmute.
 Changes made through desktop controls update M/SELECT LEDs. The player state is read about once a second, so Play/Pause LEDs also follow pauses started in the player itself; they are off while the player is missing, ambiguous or reports Stopped. Other button LEDs are off unless a binding lights them.
@@ -171,6 +171,28 @@ reload, or when everything was muted elsewhere, the next press unmutes everythin
 Push-to-Talk does not mute the inputs at startup, only
 after the first release; a button held during a reconnect or mode change is not released
 by the daemon.
+
+### Knob bindings
+
+In DAW mode the knobs send relative steps (no position, no push). Bind them in the web
+interface or with `[[knobs]]` tables; each step changes a volume by `step` percent
+(1-20, default 2). Steps arriving within one loop tick are summed into one volume write,
+volume is clamped to 0-100 %, and a muted device stays muted.
+
+```toml
+[[knobs]]
+knob = 1            # 1-8
+action = "vol_ch"   # volume of the device on strip `channel`
+channel = 1
+step = 5
+
+[[knobs]]
+knob = 2
+action = "vol_out"  # default output; vol_in: default input
+```
+
+A knob changes the device volume without moving the fader. In direct mode the next fader
+movement takes over again; with `soft_takeover` the fader blinks until it catches up.
 
 ## Install a user service
 

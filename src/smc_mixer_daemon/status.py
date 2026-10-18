@@ -22,6 +22,7 @@ class Board:
         self._held: set[str] = set()
         self._last = ""
         self._presses = 0
+        self._knob = {"last": 0, "delta": 0, "turns": 0}
         self.reload = threading.Event()
 
     @property
@@ -53,6 +54,10 @@ class Board:
             else:
                 self._held.discard(button)
 
+    def turn(self, knob: int, delta: int) -> None:
+        with self._lock:
+            self._knob = {"last": knob, "delta": delta, "turns": self._knob["turns"] + 1}
+
     def clear_keys(self) -> None:
         with self._lock:
             self._held.clear()
@@ -60,7 +65,7 @@ class Board:
     def status(self) -> dict[str, Any]:
         with self._lock:
             keys = {"held": sorted(self._held), "last": self._last, "presses": self._presses}
-            return {**self._status, "log": list(self._log)[::-1], "keys": keys}
+            return {**self._status, "log": list(self._log)[::-1], "keys": keys, "knob": dict(self._knob)}
 
 
 class BoardHandler(logging.Handler):

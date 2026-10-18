@@ -3,6 +3,7 @@
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import replace
 
 from smc_mixer import (
     LED_BUTTONS,
@@ -11,6 +12,7 @@ from smc_mixer import (
     DeviceMode,
     Event,
     FaderEvent,
+    KnobEvent,
     MidiProtocol,
     SmcMixer,
     SmcMixerError,
@@ -50,6 +52,7 @@ class Controller:
         self.leds: dict[Button, bool] = {}
         self.blinks: dict[int, bool] = {}
         self.bindings = effective(config.buttons, {strip.channel for strip in config.strips})
+        self.knobs = {knob.knob: knob for knob in config.knobs if knob.action != "none"}
         self.actions = Actions(self)
         self.pulses: dict[Button, float] = {}
         self.media_state: str | None = None
@@ -133,9 +136,11 @@ class Controller:
         if self.ready:
             self.audio.volume(device, value)
             state.written(value)
+            if self.snapshot is not None:  # keep the cache current for relative changes (knobs)
+                self.snapshot.devices[device.key] = replace(device, volume=float(value))
 
     def event(self, event: Event) -> None:
-        if not self.ready or not isinstance(event, (FaderEvent, ButtonEvent)):
+        if not self.ready or not isinstance(event, (FaderEvent, ButtonEvent, KnobEvent)):
             return
         if event.protocol != MidiProtocol.MCU or event.ambiguous:
             return
@@ -148,6 +153,11 @@ class Controller:
                 if state.move(value):
                     self.write(device, state, value)
                 self.feedback()
+            return
+        if isinstance(event, KnobEvent):
+            knob = self.knobs.get(event.knob)
+            if knob and event.delta:
+                self.actions.turn(knob, event.delta)
             return
         binding = self.bindings.get(event.button)
         if not event.pressed:

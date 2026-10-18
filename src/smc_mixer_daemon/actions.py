@@ -2,12 +2,14 @@
 
 import logging
 import time
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from smc_mixer import Button
 from smc_mixer_daemon.audio import Device, Snapshot
 from smc_mixer_daemon.buttons import MEDIA_ACTIONS, Binding
 from smc_mixer_daemon.commands import BackendError
+from smc_mixer_daemon.knobs import KnobBinding
 
 if TYPE_CHECKING:
     from smc_mixer_daemon.controller import Controller
@@ -101,6 +103,25 @@ class Actions:
             self.set_inputs_muted(False)
         elif action == "out_cycle":
             self.cycle_output()
+
+    def turn(self, knob: KnobBinding, delta: int) -> None:
+        """Change a device volume relative to its current value; never unmutes."""
+        snapshot = self.c.snapshot
+        if snapshot is None:
+            return
+        if knob.action == "vol_ch":
+            device = self.device(knob.channel)
+        else:
+            name = snapshot.sink if knob.action == "vol_out" else snapshot.source
+            device = snapshot.devices.get(("sink" if knob.action == "vol_out" else "source", name))
+        if device is None:
+            return
+        value = min(100, max(0, round(device.volume) + delta * knob.step))
+        if value == round(device.volume):
+            return
+        self.c.audio.volume(device, value)
+        # Our own write: keep the cached volume current so rapid turns accumulate before the next refresh.
+        snapshot.devices[device.key] = replace(device, volume=float(value))
 
     def toggle_all(self, kind: str, devices: list[Device]) -> None:
         """Mute everything, or undo it while keeping devices that were muted before."""

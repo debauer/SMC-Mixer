@@ -1,4 +1,5 @@
 import { createButtons, hasLed } from "./buttons.js";
+import { createKnobs } from "./knobs.js";
 import { el } from "./dom.js";
 import { renderEditor } from "./editor.js";
 import { createStrips } from "./strips.js";
@@ -27,6 +28,7 @@ const fromConfig = (config) => ({
     const row = config.strips.find((strip) => strip.channel === i + 1);
     return row ? { kind: row.kind, name: row.name, label: row.label || "" } : null;
   }),
+  knobs: Object.fromEntries(config.knobs.map((k) => [k.knob, { action: k.action, channel: k.channel, step: k.step }])),
   buttons: Object.fromEntries(config.buttons.map((b) => [b.button, { action: b.action, channel: b.channel, led: b.led }])),
 });
 
@@ -34,6 +36,9 @@ const payload = (draft) => ({
   soft_takeover: draft.soft_takeover,
   player: draft.player,
   strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name, label: slot.label.trim() || null }] : [])),
+  knobs: Object.entries(draft.knobs)
+    .sort(([a], [b]) => a - b)
+    .map(([knob, k]) => ({ knob: Number(knob), action: k.action, channel: k.channel, step: k.step })),
   buttons: Object.entries(draft.buttons)
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([button, b]) => ({ button, action: b.action, channel: b.channel, led: b.led })),
@@ -44,6 +49,7 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 
 let updateStrips = null;
 let updateButtons = null;
+let updateKnobs = null;
 let loggedKey = "";
 
 function banner(text) {
@@ -86,6 +92,7 @@ function renderLive() {
   if (!model.draft) return;
   updateStrips(model);
   updateButtons(model);
+  updateKnobs(model);
   renderHeader();
   renderMedia();
   renderLog();
@@ -113,7 +120,14 @@ const handlers = {
       if (draft.strips[channel - 1] && draft.strips[channel - 1].name) for (const key of stripButtons(channel)) delete draft.buttons[key];
       if (!draft.strips[channel - 1] || !draft.strips[channel - 1].name) {
         for (const [key, b] of Object.entries(draft.buttons)) if (b.channel === channel) delete draft.buttons[key];
+        for (const [key, k] of Object.entries(draft.knobs)) if (k.channel === channel) delete draft.knobs[key];
       }
+    }),
+  knob: (n, patch) =>
+    edit((draft) => {
+      const next = { action: "none", channel: null, step: 2, ...draft.knobs[n], ...patch };
+      if (next.action === "none") return void delete draft.knobs[n];
+      draft.knobs[n] = next;
     }),
   label: (channel, text) => {
     // Live typing must not rebuild the editor (it would drop focus), so update only the draft and the cards.
@@ -175,6 +189,10 @@ async function start() {
     renderAll();
   });
   updateStrips = strips.update;
+  updateKnobs = createKnobs(strips.knobHosts, (n) => {
+    model.selected = { kind: "knob", id: n };
+    renderAll();
+  });
   updateButtons = createButtons(strips.hosts, $("buttons"), (name) => {
     model.selected = { kind: "button", id: name };
     renderAll();

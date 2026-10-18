@@ -61,6 +61,7 @@ class Api:
                 {"button": b.button.name, "action": b.action, "channel": b.channel, "led": b.led}
                 for b in config.buttons
             ],
+            "knobs": [{"knob": k.knob, "action": k.action, "channel": k.channel, "step": k.step} for k in config.knobs],
         }
 
     def devices(self) -> dict[str, Any]:

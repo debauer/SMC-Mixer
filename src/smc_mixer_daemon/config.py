@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from smc_mixer_daemon.buttons import Binding, BindingError, parse_binding, strip_buttons
+from smc_mixer_daemon.knobs import KnobBinding, KnobBindingError, parse_knob
 
 MAX_LABEL = 40
 
@@ -37,6 +38,7 @@ class Config:
     player: str | None = None
     web: WebConfig = field(default_factory=WebConfig)
     buttons: tuple[Binding, ...] = ()
+    knobs: tuple[KnobBinding, ...] = ()
 
 
 def default_path() -> Path:
@@ -81,7 +83,7 @@ def parse_web(value: Any) -> WebConfig:
 
 
 def parse(raw: dict[str, Any]) -> Config:
-    table(raw, {"daemon", "media", "strips", "web", "buttons"}, "configuration")
+    table(raw, {"daemon", "media", "strips", "web", "buttons", "knobs"}, "configuration")
     daemon = table(raw.get("daemon", {}), {"soft_takeover"}, "daemon")
     soft = daemon.get("soft_takeover", False)
     if type(soft) is not bool:
@@ -115,10 +117,11 @@ def parse(raw: dict[str, Any]) -> Config:
     if len({(strip.kind, strip.name) for strip in strips}) != len(strips):
         raise ConfigError("strips: duplicate device assignment")
     buttons = parse_buttons(raw.get("buttons", []), strips)
-    if not strips and player is None and not buttons:
-        raise ConfigError("configure at least one strip, button or media player")
+    knobs = parse_knobs(raw.get("knobs", []), strips)
+    if not strips and player is None and not buttons and not knobs:
+        raise ConfigError("configure at least one strip, button, knob or media player")
     web = parse_web(raw["web"]) if "web" in raw else WebConfig()
-    return Config(tuple(strips), soft, player, web, buttons)
+    return Config(tuple(strips), soft, player, web, buttons, knobs)
 
 
 def parse_buttons(entries: Any, strips: list[Strip]) -> tuple[Binding, ...]:
@@ -138,3 +141,19 @@ def parse_buttons(entries: Any, strips: list[Strip]) -> tuple[Binding, ...]:
         names = ", ".join(sorted(button.name for button in taken))
         raise ConfigError(f"buttons: {names} belong to configured strips; free the channel first")
     return tuple(bindings)
+
+
+def parse_knobs(entries: Any, strips: list[Strip]) -> tuple[KnobBinding, ...]:
+    if not isinstance(entries, list):
+        raise ConfigError("knobs: expected [[knobs]] tables")
+    channels = {strip.channel for strip in strips}
+    knobs: list[KnobBinding] = []
+    for index, entry in enumerate(entries):
+        row = table(entry, {"knob", "action", "channel", "step"}, f"knobs[{index}]")
+        try:
+            knobs.append(parse_knob(row, f"knobs[{index}]", channels))
+        except KnobBindingError as exc:
+            raise ConfigError(str(exc)) from exc
+    if len({knob.knob for knob in knobs}) != len(knobs):
+        raise ConfigError("knobs: duplicate knob")
+    return tuple(knobs)

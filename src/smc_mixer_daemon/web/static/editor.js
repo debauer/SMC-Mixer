@@ -1,4 +1,5 @@
 import { renderButtonEditor } from "./button_editor.js";
+import { renderKnobEditor } from "./knob_editor.js";
 import { el, KIND, pad } from "./dom.js";
 
 const segment = (options, current, pick) =>
@@ -63,6 +64,7 @@ export function general({ draft, devices }, update) {
 }
 
 export function renderEditor(container, model, handlers) {
+  if (model.selected.kind === "knob") return renderKnobEditor(container, model, handlers, general);
   if (model.selected.kind === "button") return renderButtonEditor(container, model, handlers, general);
   const { draft, devices } = model;
   const selected = model.selected.id;

@@ -22,6 +22,8 @@ PAGES = {
     "/dom.js": ("dom.js", "text/javascript; charset=utf-8"),
     "/buttons.js": ("buttons.js", "text/javascript; charset=utf-8"),
     "/button_editor.js": ("button_editor.js", "text/javascript; charset=utf-8"),
+    "/knobs.js": ("knobs.js", "text/javascript; charset=utf-8"),
+    "/knob_editor.js": ("knob_editor.js", "text/javascript; charset=utf-8"),
     "/strips.js": ("strips.js", "text/javascript; charset=utf-8"),
     "/editor.js": ("editor.js", "text/javascript; charset=utf-8"),
 }
