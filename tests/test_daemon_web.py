@@ -215,3 +215,36 @@ def test_buttons_are_saved_through_the_api(web: tuple[int, Board, Path]) -> None
     body["buttons"] = [{"button": "MUTE_1", "action": "mic_mute", "channel": None, "led": "off"}]
     status, error = call(port, "PUT", "/api/config", body)
     assert status == 400 and "belong to configured strips" in error["error"]
+
+
+def test_board_tracks_held_and_last_pressed_keys() -> None:
+    board = Board()
+    board.key("REC_1", True)
+    board.key("PLAY", True)
+    board.key("REC_1", False)
+    keys = board.status()["keys"]
+    assert keys == {"held": ["PLAY"], "last": "PLAY", "presses": 2}
+    assert board.status()["log"][0]["msg"] == "PLAY pressed"
+    board.clear_keys()
+    assert board.status()["keys"]["held"] == []
+
+
+def test_loop_records_every_physical_press_even_when_unbound(monkeypatch: pytest.MonkeyPatch) -> None:
+    mixer, master, _ = mixer_pair()
+    monkeypatch.setattr(runtime.SmcMixer, "open", lambda: mixer)
+    monkeypatch.setattr(runtime, "Audio", FakeAudio)
+    board = Board()
+
+    class Stop(threading.Event):
+        ticks = 0
+
+        def wait(self, timeout: float | None = None) -> bool:
+            self.ticks += 1
+            if self.ticks == 2:
+                master.emit(bytes([0x90, 46, 127]))  # BANK_LEFT: unbound
+            if self.ticks == 3:
+                self.set()
+            return self.is_set()
+
+    runtime.control_loop(Config((Strip(1, "sink", "speakers"),)), Stop(), Subscription(), board)
+    assert board.status()["keys"] == {"held": ["BANK_LEFT"], "last": "BANK_LEFT", "presses": 1}

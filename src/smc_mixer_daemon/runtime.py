@@ -7,7 +7,7 @@ from collections.abc import Callable
 from itertools import islice
 from pathlib import Path
 
-from smc_mixer import ButtonEvent, DeviceMode, SmcMixer, SmcMixerError
+from smc_mixer import ButtonEvent, DeviceMode, MidiProtocol, SmcMixer, SmcMixerError
 from smc_mixer_daemon.audio import Audio
 from smc_mixer_daemon.commands import BackendError
 from smc_mixer_daemon.config import Config, ConfigError, load
@@ -68,6 +68,11 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                 for _ in islice(mixer.events(timeout=0), 4096):
                     pass
                 generation, events = inbox.take()
+                if controller.generation != generation or not mixer.connected:
+                    board.clear_keys()
+                for event in events:
+                    if isinstance(event, ButtonEvent) and event.protocol == MidiProtocol.MCU and not event.ambiguous:
+                        board.key(event.button.name, event.pressed)
                 try:
                     if controller.generation != generation:
                         controller.suspend()
@@ -94,8 +99,6 @@ def control_loop(config: Config, stop: threading.Event, subscription: Subscripti
                         for event in events:
                             if inbox.generation != generation or stop.is_set():
                                 break
-                            if isinstance(event, ButtonEvent) and event.pressed and not event.ambiguous:
-                                board.note("event", f"{event.button.name} pressed")
                             controller.event(event)
                     controller.feedback()
                 except BackendError as exc:

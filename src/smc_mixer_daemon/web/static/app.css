@@ -118,6 +118,12 @@ select { padding: 9px 11px; border: 1px solid var(--line-strong); border-radius:
 .key.used { border-color: color-mix(in oklch, var(--sink) 50%, var(--line)); }
 .key.fixed { border-style: dashed; }
 .key.selected { border-color: var(--sink); background: var(--raised); box-shadow: 0 0 0 1px var(--sink); }
+.key.pressed { border-color: var(--warn); background: var(--raised); box-shadow: 0 0 0 1px var(--warn), 0 0 18px color-mix(in oklch, var(--warn) 70%, transparent); }
+.key.flash { animation: key-flash 0.8s ease-out; }
+@keyframes key-flash {
+  from { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn), 0 0 22px var(--warn); }
+}
+@media (prefers-reduced-motion: reduce) { .key.flash { animation: none; } }
 .key-tag { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--muted); }
 .key.used .key-tag { color: var(--sink); }
 .key .led.on { background: var(--sink); box-shadow: 0 0 8px var(--sink); }

@@ -60,6 +60,8 @@ fader position, M/SEL LEDs, soft-takeover state) and the daemon's recent log, an
 edits the strip assignments, soft takeover and media player. **Save** validates the
 configuration, rewrites `config.toml` (comments in the file are not preserved) and
 reloads the daemon in-process; the mixer is briefly released and re-initialized.
+Every physical button press lights its key in the page (steady while held, plus a short
+glow), whether or not it is bound.
 The device and player lists come live from `pactl` and `playerctl`.
 
 ```toml

@@ -19,6 +19,9 @@ class Board:
         self._status: dict[str, Any] = {"mixer": {"connected": False, "mode": None, "control": "waiting"}}
         self._log: deque[dict[str, str]] = deque(maxlen=60)
         self._config = config
+        self._held: set[str] = set()
+        self._last = ""
+        self._presses = 0
         self.reload = threading.Event()
 
     @property
@@ -39,9 +42,25 @@ class Board:
         with self._lock:
             self._log.append({"t": time.strftime("%H:%M:%S"), "level": level, "msg": message})
 
+    def key(self, button: str, pressed: bool) -> None:
+        """Record a physical button edge, independent of whether it is bound or control is active."""
+        with self._lock:
+            if pressed:
+                self._held.add(button)
+                self._last = button
+                self._presses += 1
+                self._log.append({"t": time.strftime("%H:%M:%S"), "level": "event", "msg": f"{button} pressed"})
+            else:
+                self._held.discard(button)
+
+    def clear_keys(self) -> None:
+        with self._lock:
+            self._held.clear()
+
     def status(self) -> dict[str, Any]:
         with self._lock:
-            return {**self._status, "log": list(self._log)[::-1]}
+            keys = {"held": sorted(self._held), "last": self._last, "presses": self._presses}
+            return {**self._status, "log": list(self._log)[::-1], "keys": keys}
 
 
 class BoardHandler(logging.Handler):

@@ -174,7 +174,7 @@ async function start() {
   }
   await Promise.all([poll(), refreshDevices()]);
   renderAll();
-  setInterval(poll, 500);
+  setInterval(poll, 200);
   setInterval(refreshDevices, 5000);
 }
 

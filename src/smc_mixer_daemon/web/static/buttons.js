@@ -74,7 +74,11 @@ export function createButtons(container, onSelect) {
   for (const [name, tag] of TRANSPORT) transport.append(make(name, tag));
   container.append(grid, transport);
 
+  let seen = null;
   return function update({ draft, status, selected }) {
+    const keys = status.keys || { held: [], last: "", presses: 0 };
+    const flash = seen !== null && keys.presses !== seen && cells.get(keys.last);
+    seen = keys.presses;
     for (const [name, { card, led, label, tag }] of cells) {
       const binding = effective(draft, name);
       const fixed = fixedBy(draft, name);
@@ -82,10 +86,17 @@ export function createButtons(container, onSelect) {
       let text = used ? LABEL[binding.action] : "Frei";
       if (binding.channel) text += ` ${binding.channel}`;
       label.textContent = text;
-      card.className = `key${used ? " used" : ""}${fixed ? " fixed" : ""}${selected.kind === "button" && selected.id === name ? " selected" : ""}`;
+      card.className = `key${card.classList.contains("flash") ? " flash" : ""}${used ? " used" : ""}${fixed ? " fixed" : ""}${selected.kind === "button" && selected.id === name ? " selected" : ""}`;
       card.setAttribute("aria-pressed", String(selected.kind === "button" && selected.id === name));
       card.setAttribute("aria-label", `Taste ${tag}: ${text}`);
       led.classList.toggle("on", Boolean(status.leds && status.leds[name]));
+      card.classList.toggle("pressed", keys.held.includes(name));
+    }
+    if (flash) {
+      // Restart the animation so quick repeated presses flash again.
+      flash.card.classList.remove("flash");
+      void flash.card.offsetWidth;
+      flash.card.classList.add("flash");
     }
   };
 }
