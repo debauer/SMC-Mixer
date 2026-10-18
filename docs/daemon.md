@@ -221,7 +221,7 @@ there is no login. It is meant for the loopback address only (see [Web interface
 ## MQTT
 
 With an `[mqtt]` table the daemon connects to a broker, publishes every button, knob and
-fader, and accepts commands for LEDs, volume and mute. It needs the optional client library
+fader, and accepts commands for LEDs and mute. It needs the optional client library
 (`uv sync --extra mqtt`, or `pip install 'smc-mixer[mqtt]'`); with `enabled = true` and no
 library the daemon refuses to start. A broker that is unreachable is retried in the
 background (1-30 seconds) and the mixer keeps working meanwhile.
@@ -255,18 +255,16 @@ encoder and channel editor has an *MQTT* switch showing its topic.
 | `channel/<n>/volume` | device volume `0`-`100` of the strip's device (retained) | published |
 | `channel/<n>/mute` | `ON` / `OFF` (retained) | published |
 | `led/<NAME>/set` | `ON`, `OFF` or `AUTO` (back to the normal LED behavior) | subscribed |
-| `channel/<n>/volume/set` | `0`-`100` | subscribed |
 | `channel/<n>/mute/set` | `ON` / `OFF` | subscribed |
 
 Only buttons that have an LED (REC, SOLO, MUTE, SELECT, REWIND, FAST_FORWARD, STOP, PLAY, RECORD) accept
-`led/<NAME>/set`; a forced state lasts until `AUTO`, a configuration reload or a mixer reconnect. Volume commands behave like knobs: the
-fader does not move, and in direct mode the next fader movement takes over again. Invalid or unknown messages are
+`led/<NAME>/set`; a forced state lasts until `AUTO`, a configuration reload or a mixer reconnect. Invalid or unknown messages are
 logged and ignored, and commands are dropped while the mixer is not in DAW mode. Commands for inputs
 in `ignore` are dropped as well.
 
 ```sh
 mosquitto_pub -t smc/led/REC_1/set -m ON
-mosquitto_pub -t smc/channel/1/volume/set -m 35
+mosquitto_pub -t smc/channel/1/mute/set -m ON
 mosquitto_sub -v -t 'smc/#'
 ```
 

@@ -1,4 +1,4 @@
-"""MQTT bridge: publishes mixer inputs and accepts LED, volume and mute commands.
+"""MQTT bridge: publishes mixer inputs and accepts LED and mute commands.
 
 Topics below `<prefix>/`:
   status                      online/offline (retained, last will)
@@ -7,7 +7,6 @@ Topics below `<prefix>/`:
   fader/<n>                   physical position 0-100 (retained)
   channel/<n>/volume|mute     device state of a configured strip (retained)
   led/<NAME>/set              ON, OFF or AUTO (back to the normal LED behavior)
-  channel/<n>/volume/set      0-100
   channel/<n>/mute/set        ON or OFF
 """
 
@@ -30,9 +29,9 @@ SWITCH = {"ON": True, "OFF": False}
 
 @dataclass(frozen=True)
 class Command:
-    kind: str  # led, volume or mute
+    kind: str  # led or mute
     target: str | int  # button name or channel
-    value: int | bool | None  # led: None means automatic
+    value: bool | None  # led: None means automatic
 
 
 def parse_command(prefix: str, topic: str, payload: bytes) -> Command | None:
@@ -48,8 +47,6 @@ def parse_command(prefix: str, topic: str, payload: bytes) -> Command | None:
             channel = int(parts[1])
             if parts[2] == "mute":
                 return Command("mute", channel, SWITCH[text.upper()])
-            if parts[2] == "volume" and 0 <= (volume := round(float(text))) <= 100:
-                return Command("volume", channel, volume)
     except (KeyError, ValueError):
         pass
     log.warning("ignoring MQTT message %s = %r", topic, text)
@@ -105,7 +102,7 @@ class Mqtt:
         self.sent.clear()  # retained state is republished after a reconnect
         log.info("MQTT connected to %s:%s, topics below %s/", self.config.host, self.config.port, self.config.prefix)
         client.publish(self.topic("status"), "online", retain=True)
-        for pattern in ("led/+/set", "channel/+/volume/set", "channel/+/mute/set"):
+        for pattern in ("led/+/set", "channel/+/mute/set"):
             client.subscribe(self.topic(pattern))
 
     def on_disconnect(self, client: Any, userdata: Any, flags: Any, reason: Any, properties: Any = None) -> None:

@@ -78,7 +78,7 @@ def test_start_connects_with_login_will_and_subscriptions() -> None:
     assert client.will == ("home/smc/status", "offline", True)
     mqtt.on_connect(client, None, None, OK)
     assert client.published == [("home/smc/status", "online", True)]
-    assert client.subscribed == ["home/smc/led/+/set", "home/smc/channel/+/volume/set", "home/smc/channel/+/mute/set"]
+    assert client.subscribed == ["home/smc/led/+/set", "home/smc/channel/+/mute/set"]
     mqtt.close()
     assert client.published[-1] == ("home/smc/status", "offline", True) and client.calls[-2:] == [
         "disconnect",
@@ -145,14 +145,12 @@ def test_channel_state_is_published_on_change_and_again_after_reconnect() -> Non
         ("smc/led/REC_1/set", "ON", Command("led", "REC_1", True)),
         ("smc/led/REC_1/set", " off ", Command("led", "REC_1", False)),
         ("smc/led/REC_1/set", "auto", Command("led", "REC_1", None)),
-        ("smc/channel/2/volume/set", "42.4", Command("volume", 2, 42)),
         ("smc/channel/2/mute/set", "ON", Command("mute", 2, True)),
         ("smc/led/BANK_LEFT/set", "ON", None),  # no LED
         ("smc/led/REC_1/set", "maybe", None),
         ("smc/channel/9/mute/set", "ON", None),
         ("smc/channel/12/mute/set", "ON", None),
-        ("smc/channel/1/volume/set", "101", None),
-        ("smc/channel/1/volume/set", "loud", None),
+        ("smc/channel/1/volume/set", "10", None),  # volume is not writable
         ("smc/channel/1/other/set", "1", None),
         ("smc/button/REC_1", "ON", None),
     ],
@@ -171,7 +169,7 @@ def test_incoming_commands_are_queued_and_respect_the_ignore_list() -> None:
         ("smc/led/REC_1/set", "bad"),
     ]:
         mqtt.on_message(None, None, message(topic, payload))
-    assert mqtt.commands() == [Command("led", "REC_1", True), Command("volume", 1, 10)]
+    assert mqtt.commands() == [Command("led", "REC_1", True)]
     assert mqtt.commands() == []
 
 
@@ -194,14 +192,13 @@ def test_led_override_wins_until_auto() -> None:
     assert not controller.leds[Button.REC_1] and controller.leds[Button.SELECT_1]
 
 
-def test_volume_and_mute_commands_change_the_device_without_unmuting_or_moving_faders() -> None:
+def test_mute_commands_change_the_device() -> None:
     controller, audio = started()
-    controller.actions.remote(Command("volume", 3, 20))
     controller.actions.remote(Command("mute", 3, True))
     controller.actions.remote(Command("mute", 3, False))
-    assert audio.calls == [("volume", "mic", 20), ("setmute", "mic", True), ("setmute", "mic", False)]
+    assert audio.calls == [("setmute", "mic", True), ("setmute", "mic", False)]
     audio.calls.clear()
-    controller.actions.remote(Command("volume", 7, 20))  # no strip there
+    controller.actions.remote(Command("mute", 7, True))  # no strip there
     assert not audio.calls
 
 

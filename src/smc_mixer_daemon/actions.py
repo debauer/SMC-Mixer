@@ -137,7 +137,7 @@ class Actions:
             self.c.snapshot.devices[device.key] = replace(device, volume=float(value))
 
     def remote(self, command: Command) -> None:
-        """Apply an MQTT command; like knobs, volume writes do not move the fader."""
+        """Apply an MQTT command."""
         if command.kind == "led":
             button = Button[str(command.target)]
             if command.value is None:
@@ -149,10 +149,8 @@ class Actions:
         device = self.device(int(command.target))
         if device is None:
             log.warning("MQTT %s for channel %s: no device is available there", command.kind, command.target)
-        elif command.kind == "mute":
+        else:
             self.c.audio.mute(device, bool(command.value))
-        elif isinstance(command.value, int):
-            self.set_volume(device, command.value)
 
     def toggle_all(self, kind: str, devices: list[Device]) -> None:
         """Mute everything, or undo it while keeping devices that were muted before."""
