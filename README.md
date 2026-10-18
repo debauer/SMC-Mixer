@@ -68,6 +68,8 @@ mode, connection status and recent events. It sends read requests without
 changing LEDs or configuration. Use a UTF-8 terminal with at least **105 columns
 and 33 rows**. Press **q** or **Ctrl+C** to quit.
 
+![The monitor in demo mode: eight channels with knobs, faders and M/S/R/SEL keys, the transport row and the event log](docs/images/monitor-demo.jpg)
+
 See the [tools guide](docs/tools.md#live-monitor) for display conventions and
 the other installed commands.
 
