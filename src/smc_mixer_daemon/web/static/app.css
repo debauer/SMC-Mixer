@@ -3,7 +3,8 @@
   --bg: #08090d;
   --panel: #0b0c12;
   --raised: #11141f;
-  --line: #1a1d28;
+  --line: #232838;
+  --edge: #3b4259;
   --line-strong: #262a3a;
   --text: #e4e6ee;
   --muted: #8a90a4;
@@ -55,12 +56,12 @@ h2.label.source { color: var(--source); }
 
 .layout { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 20px 24px; }
 .column { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-.panel { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.panel { border: 1px solid var(--edge); border-radius: 14px; background: var(--panel); box-shadow: 0 0 0 1px #05060a; }
 .column .panel { padding: 18px; }
 .panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 14px; margin-bottom: 14px; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; }
 
-.channel { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px; border: 1px solid var(--line); border-radius: 12px; background: #090a0f; }
+.channel { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 6px; border: 1px solid var(--edge); border-radius: 12px; background: #0e1018; }
 .channel-knob { display: flex; }
 .knob-row { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px; }
 .knob { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; min-width: 0; padding: 6px 4px; border: 1px solid var(--line); border-radius: 10px; background: #0d0f16; }
