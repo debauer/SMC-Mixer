@@ -1,12 +1,14 @@
 """Configurable button bindings: validation, actions and LED feedback on fake boundaries."""
 
 import tomllib
+from collections.abc import Callable
 
 import pytest
 
 from daemon_fakes import FakeAudio, FakeMedia, mixer_pair
 from smc_mixer import Button, ButtonEvent, Layer
 from smc_mixer_daemon import config_store
+from smc_mixer_daemon.audio import Device
 from smc_mixer_daemon.buttons import Binding, effective
 from smc_mixer_daemon.config import Config, ConfigError, Strip, parse
 from smc_mixer_daemon.controller import Controller
@@ -134,3 +136,21 @@ def test_buttons_round_trip_and_free_channel_buttons_are_bindable() -> None:
     assert sorted(again.buttons, key=lambda b: b.button) == sorted(config.buttons, key=lambda b: b.button)
     assert len(again.buttons) == 2
     assert parse({"buttons": [{"button": "UP", "action": "next"}]}).buttons[0].action == "next"
+
+
+def test_selection_reverted_by_the_audio_server_is_reported(caplog: pytest.LogCaptureFixture) -> None:
+    class Stubborn(FakeAudio):
+        def select(self, device: Device, valid: Callable[[], bool] = lambda: True) -> None:
+            self.calls.append(("select", device.name))
+
+    mixer, _, _ = mixer_pair()
+    audio = Stubborn()
+    audio.devices["source", "mic2"] = Device("source", "mic2", 4, "Mic 2", False, 40)
+    strips = (Strip(3, "source", "mic"), Strip(4, "source", "mic2"))
+    controller = Controller(Config(strips), mixer, audio, None)
+    assert controller.start()
+    caplog.set_level("INFO")
+    tap(controller, Button.SELECT_4)
+    assert "default source is still mic after selecting mic2" in caplog.text
+    tap(controller, Button.SELECT_3)
+    assert "default source is now mic" in caplog.text

@@ -39,6 +39,23 @@ class Actions:
             self.audio(binding)
         finally:
             self.c.refresh()
+        if binding.action == "select_ch":
+            self.verify_selection(binding)
+
+    def verify_selection(self, binding: Binding) -> None:
+        device, snapshot = self.device(binding.channel), self.c.snapshot
+        if device is None or snapshot is None:
+            return
+        current = snapshot.sink if device.kind == "sink" else snapshot.source
+        if current == device.name:
+            log.info("default %s is now %s", device.kind, device.name)
+        else:
+            log.warning(
+                "default %s is still %s after selecting %s; the audio server rejected or reverted it",
+                device.kind,
+                current,
+                device.name,
+            )
 
     def audio(self, binding: Binding) -> None:
         action, audio, snapshot = binding.action, self.c.audio, self.c.snapshot
