@@ -3,9 +3,9 @@ import { el } from "./dom.js";
 const CH = [1, 2, 3, 4, 5, 6, 7, 8];
 export const ROWS = [
   ["M", "MUTE"],
+  ["S", "SOLO"],
   ["R", "REC"],
   ["SEL", "SELECT"],
-  ["S", "SOLO"],
 ];
 export const TRANSPORT = [
   ["PLAY", "Play"],
@@ -59,20 +59,20 @@ export function effective(draft, name) {
   return { action: "none", channel: null, led: "off" };
 }
 
-export function createButtons(container, onSelect) {
+/** `hosts[i]` holds the keys of channel i+1 (inside its channel column); `transport` the keys below. */
+export function createButtons(hosts, transport, onSelect) {
   const cells = new Map();
-  const make = (name, tag) => {
+  const make = (name, tag, spoken = tag) => {
     const led = el("i", { class: "led" });
     const label = el("span", { class: "btn-label" });
     const card = el("button", { type: "button", class: "key", onclick: () => onSelect(name) }, el("span", { class: "key-tag mono" }, tag, led), label);
-    cells.set(name, { card, led, label, tag });
+    cells.set(name, { card, led, label, tag: spoken });
     return card;
   };
-  const grid = el("div", { class: "key-grid" });
-  for (const [tag, row] of ROWS) for (const channel of CH) grid.append(make(`${row}_${channel}`, `${tag}${channel}`));
-  const transport = el("div", { class: "key-grid transport" });
+  CH.forEach((channel, index) => {
+    for (const [tag, row] of ROWS) hosts[index].append(make(`${row}_${channel}`, tag, `${tag} Kanal ${channel}`));
+  });
   for (const [name, tag] of TRANSPORT) transport.append(make(name, tag));
-  container.append(grid, transport);
 
   let seen = null;
   return function update({ draft, status, selected }) {

@@ -151,11 +151,12 @@ async function save() {
 }
 
 async function start() {
-  updateStrips = createStrips($("strips"), (channel) => {
+  const strips = createStrips($("strips"), (channel) => {
     model.selected = { kind: "strip", id: channel };
     renderAll();
   });
-  updateButtons = createButtons($("buttons"), (name) => {
+  updateStrips = strips.update;
+  updateButtons = createButtons(strips.hosts, $("buttons"), (name) => {
     model.selected = { kind: "button", id: name };
     renderAll();
   });

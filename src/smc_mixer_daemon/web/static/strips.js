@@ -4,6 +4,7 @@ const percent = (raw) => Math.round((raw * 100) / 127);
 
 export function createStrips(container, onSelect) {
   const cards = [];
+  const hosts = [];
   for (let channel = 1; channel <= 8; channel++) {
     const fill = el("div", { class: "fill" });
     const cap = el("div", { class: "cap" });
@@ -26,11 +27,13 @@ export function createStrips(container, onSelect) {
       parts.kind,
       el("div", { class: "leds" }, parts.mute, parts.solo),
     );
-    container.append(card);
+    const keys = el("div", { class: "channel-keys" });
+    container.append(el("div", { class: "channel" }, keys, card));
+    hosts.push(keys);
     cards.push({ card, parts });
   }
 
-  return function update({ draft, status, selected }) {
+  const update = ({ draft, status, selected }) => {
     const live = new Map((status.strips || []).map((strip) => [strip.channel, strip]));
     cards.forEach(({ card, parts }, index) => {
       const channel = index + 1;
@@ -53,4 +56,5 @@ export function createStrips(container, onSelect) {
       parts.solo.classList.toggle("on", Boolean(device && device.default));
     });
   };
+  return { update, hosts };
 }
