@@ -66,6 +66,8 @@ Every physical button press lights its key in the page (steady while held, plus 
 glow), whether or not it is bound.
 The device and player lists come live from `pactl` and `playerctl`.
 
+![The daemon's web interface: encoders, eight channel columns with their keys and faders, transport and navigation keys, device list and daemon log](images/daemon-web.jpg)
+
 ```toml
 [web]
 enabled = true      # false disables the interface

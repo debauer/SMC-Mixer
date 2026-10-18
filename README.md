@@ -73,6 +73,13 @@ and 33 rows**. Press **q** or **Ctrl+C** to quit.
 See the [tools guide](docs/tools.md#live-monitor) for display conventions and
 the other installed commands.
 
+## Linux daemon web interface
+
+`smc-mixer-daemon run` serves a local page to assign devices, bind buttons and knobs
+and watch the mixer live. See the [daemon guide](docs/daemon.md#web-interface).
+
+![The daemon's web interface: encoders, eight channel columns with their keys and faders, transport and navigation keys, device list and daemon log](docs/images/daemon-web.jpg)
+
 ## Packages and documentation
 
 The packages are installed together:
