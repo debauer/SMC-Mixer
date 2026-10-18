@@ -1,0 +1,1 @@
+"""ALSA/amidi diagnostic commands."""

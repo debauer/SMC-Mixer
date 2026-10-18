@@ -1,0 +1,69 @@
+[project]
+name = "smc-mixer"
+version = "0.1.0"
+description = "Control the M-Vave / Sinco SMC-Mixer over USB-MIDI: buttons, knobs, faders, LEDs"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "python-rtmidi>=1.5.8",
+]
+
+[project.scripts]
+smc-mixer = "smc_mixer_tools.cli:main"
+unpack-fwsc = "smc_mixer_tools.firmware.unpack_fwsc:main"
+analyze-fwsc = "smc_mixer_tools.firmware.analyze:main"
+disassemble-pi32v2 = "smc_mixer_tools.firmware.disassemble:main"
+mcu-tool = "smc_mixer_tools.diagnostics.mcu:main"
+sinco-tool = "smc_mixer_tools.diagnostics.sinco:main"
+probe-smc = "smc_mixer_tools.diagnostics.probe:main"
+probe-knobs = "smc_mixer_tools.probes.knobs:main"
+probe-mode = "smc_mixer_tools.probes.mode:main"
+
+[dependency-groups]
+dev = [
+    { include-group = "lint" },
+    { include-group = "typecheck" },
+    { include-group = "test" },
+]
+test = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+lint = [
+    "ruff>=0.6",
+]
+typecheck = [
+    "mypy>=1.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/smc_mixer", "src/smc_mixer_tools"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["smc_mixer", "smc_mixer_tools"]
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["rtmidi", "rtmidi.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=smc_mixer --cov=smc_mixer_tools --cov-report=term-missing"
