@@ -46,10 +46,10 @@ def test_buttons_once_per_press_and_independent_defaults() -> None:
     controller.event(ButtonEvent(Button.MUTE_1, False, Layer.DAW))
     controller.event(press)
     assert not controller.leds[Button.MUTE_1]
-    controller.event(ButtonEvent(Button.SOLO_2, True, Layer.DAW))
-    assert controller.leds[Button.SOLO_2] and not controller.leds[Button.SOLO_1]
-    assert controller.leds[Button.SOLO_3]
-    controller.event(ButtonEvent(Button.SOLO_3, True, Layer.DAW))
+    controller.event(ButtonEvent(Button.SELECT_2, True, Layer.DAW))
+    assert controller.leds[Button.SELECT_2] and not controller.leds[Button.SELECT_1]
+    assert controller.leds[Button.SELECT_3]
+    controller.event(ButtonEvent(Button.SELECT_3, True, Layer.DAW))
     assert audio.calls[-1] == ("select", "mic")
     mixer.close()
 
@@ -65,7 +65,7 @@ def test_unassigned_controls_cc_and_ambiguous_events_are_ignored() -> None:
         FaderEvent(1, 0, Layer.CC),
         FaderEvent(1, 0, Layer.DAW, ambiguous=True),
         ButtonEvent(Button.REC_1, True, Layer.DAW),
-        ButtonEvent(Button.SELECT_1, True, Layer.DAW),
+        ButtonEvent(Button.SOLO_1, True, Layer.DAW),
     ]:
         controller.event(event)
     assert audio.calls == []
@@ -122,7 +122,7 @@ def test_audio_recovery_and_generation_invalidation() -> None:
     assert len(audio.calls) == 3
     audio.calls.clear()
     valid = False
-    controller.event(ButtonEvent(Button.SOLO_2, True, Layer.DAW))
+    controller.event(ButtonEvent(Button.SELECT_2, True, Layer.DAW))
     assert audio.calls == []
     mixer.close()
 
@@ -197,7 +197,7 @@ def test_inbox_coalesces_without_crossing_buttons_and_discards_previous_generati
     inbox = Inbox()
     for value in range(128):
         inbox.put(FaderEvent(1, value, Layer.DAW))
-    inbox.put(ButtonEvent(Button.SOLO_1, True, Layer.DAW))
+    inbox.put(ButtonEvent(Button.SELECT_1, True, Layer.DAW))
     inbox.put(FaderEvent(1, 0, Layer.DAW))
     generation, events = inbox.take()
     assert generation == 0 and len(events) == 3

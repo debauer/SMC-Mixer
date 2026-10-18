@@ -11,7 +11,7 @@ const segment = (options, current, pick) =>
   );
 
 export function buttonTitle(name) {
-  const match = /^(MUTE|SOLO|REC|SELECT)_(\d)$/.exec(name);
+  const match = /^(MUTE|REC|SELECT|SOLO)_(\d)$/.exec(name);
   if (!match) return TRANSPORT.find(([id]) => id === name)[1];
   const row = ROWS.find(([, id]) => id === match[1])[0];
   return `${row} Kanal ${match[2]}`;

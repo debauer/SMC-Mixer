@@ -14,7 +14,7 @@ export function createStrips(container, onSelect) {
       name: el("div", { class: "name" }),
       kind: el("div", { class: "kind" }),
       mute: el("span", { class: "led-tag mono" }, el("i", { class: "led" }), "M"),
-      solo: el("span", { class: "led-tag mono" }, el("i", { class: "led" }), "S"),
+      solo: el("span", { class: "led-tag mono" }, el("i", { class: "led" }), "SEL"),
     };
     const card = el(
       "button",

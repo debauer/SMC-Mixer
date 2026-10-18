@@ -44,7 +44,7 @@ class Actions:
         action, audio, snapshot = binding.action, self.c.audio, self.c.snapshot
         if snapshot is None:
             return
-        if action in ("mute_ch", "solo_ch"):
+        if action in ("mute_ch", "select_ch"):
             device = self.device(binding.channel)
             if device is None:
                 return
@@ -107,7 +107,7 @@ class Actions:
         snapshot = self.c.snapshot
         if binding.led != "active" or not snapshot:
             return False
-        if binding.action in ("mute_ch", "solo_ch"):
+        if binding.action in ("mute_ch", "select_ch"):
             device = self.device(binding.channel)
             if device is None:
                 return False

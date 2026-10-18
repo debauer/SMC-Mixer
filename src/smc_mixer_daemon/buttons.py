@@ -5,11 +5,11 @@ from typing import Any
 
 from smc_mixer import LED_BUTTONS, Button, strip_button
 
-CHANNEL_ACTIONS = ("mute_ch", "solo_ch")
+CHANNEL_ACTIONS = ("mute_ch", "select_ch")
 MEDIA_ACTIONS = {"play": "play", "pause": "pause", "play_pause": "play-pause", "next": "next", "previous": "previous"}
 ACTIONS = ("none", *CHANNEL_ACTIONS, "mic_mute", "ptt", "out_cycle", *MEDIA_ACTIONS)
 # Actions whose state can drive the LED.
-STATEFUL = frozenset({"mute_ch", "solo_ch", "mic_mute", "ptt"})
+STATEFUL = frozenset({"mute_ch", "select_ch", "mic_mute", "ptt"})
 LEDS = ("off", "active", "on")
 
 
@@ -50,7 +50,7 @@ def parse_binding(row: dict[str, Any], location: str, channels: set[int]) -> Bin
 
 
 def strip_buttons(channels: set[int]) -> set[Button]:
-    return {strip_button(row, channel) for channel in channels for row in ("MUTE", "SOLO")}
+    return {strip_button(row, channel) for channel in channels for row in ("MUTE", "SELECT")}
 
 
 def effective(explicit: tuple[Binding, ...], channels: set[int]) -> dict[Button, Binding]:
@@ -60,7 +60,7 @@ def effective(explicit: tuple[Binding, ...], channels: set[int]) -> dict[Button,
         Button.STOP: Binding(Button.STOP, "pause"),
     }
     for channel in sorted(channels):
-        for row, action in (("MUTE", "mute_ch"), ("SOLO", "solo_ch")):
+        for row, action in (("MUTE", "mute_ch"), ("SELECT", "select_ch")):
             button = strip_button(row, channel)
             result[button] = Binding(button, action, channel, "active")
     result.update({binding.button: binding for binding in explicit})

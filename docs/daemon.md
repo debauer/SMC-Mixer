@@ -56,7 +56,7 @@ the daemon after editing the file by hand; saving from the web interface reloads
 
 `run` also serves a local web interface, by default at <http://127.0.0.1:8765/>.
 It shows the mixer connection and mode, all eight strips (device volume, physical
-fader position, M/S LEDs, soft-takeover state) and the daemon's recent log, and it
+fader position, M/SEL LEDs, soft-takeover state) and the daemon's recent log, and it
 edits the strip assignments, soft takeover and media player. **Save** validates the
 configuration, rewrites `config.toml` (comments in the file are not preserved) and
 reloads the daemon in-process; the mixer is briefly released and re-initialized.
@@ -82,16 +82,16 @@ who can reach it can edit the configuration; the daemon logs a warning.
 |---|---|
 | Fader | Assigned device volume, 0-100%; all device channels linked |
 | M | Toggle mute; its LED reflects actual mute state |
-| S on an output strip | Select default output and move all current playback streams there |
-| S on an input strip | Select default input, without explicitly moving active recordings |
-| S LED | Device is the current default of its kind (input/output independently) |
+| SELECT on an output strip | Select default output and move all current playback streams there |
+| SELECT on an input strip | Select default input, without explicitly moving active recordings |
+| SELECT LED | Device is the current default of its kind (input/output independently) |
 | Play | Play/resume the configured MPRIS player |
 | Physical Pause (MCU STOP) | Pause the configured MPRIS player |
-| All other buttons (R, SELECT, Bank, transport, navigation, M/S of unassigned strips) | Unassigned until bound, see below |
+| All other buttons (R, S/SOLO, Bank, transport, navigation, and M/SELECT of unassigned strips) | Unassigned until bound, see below |
 | Knobs | Unassigned |
 
 Buttons act once per press, not again on release (Push-to-Talk also acts on release). Fader changes do not unmute.
-Changes made through desktop controls update M/S LEDs. Other button LEDs are off unless a binding lights them.
+Changes made through desktop controls update M/SELECT LEDs. Other button LEDs are off unless a binding lights them.
 
 ### Direct faders and optional soft takeover
 
@@ -122,22 +122,22 @@ concurrent external writes cannot be distinguished from those acknowledgments.
 
 ### Output routing details
 
-S sets the default sink first, then moves PulseAudio-visible playback streams
+SELECT sets the default sink first, then moves PulseAudio-visible playback streams
 from all outputs. A bounded second pass catches streams appearing during the
 switch. The daemon does not permanently enforce routing; applications/session
 policy can route future streams differently. Native PipeWire links outside
 `pipewire-pulse` are not managed.
 
 A stream can disappear or reject a move. Other moves continue; remaining failed
-moves are logged. There is no atomic rollback. The S LED reports the actual
-default output, not whether every stream was successfully moved. Input S does
+moves are logged. There is no atomic rollback. The SELECT LED reports the actual
+default output, not whether every stream was successfully moved. Input SELECT does
 not migrate recording streams or convert an input device into a playback stream.
 
 ### Button bindings
 
 Any button can be bound in the web interface (or by hand) with `[[buttons]]` tables.
-Strip M/S, Play and Pause keep the behavior above unless overridden; `action = "none"`
-disables a default. M/S of a configured strip cannot be rebound.
+Strip M/SELECT, Play and Pause keep the behavior above unless overridden; `action = "none"`
+disables a default. M/SELECT of a configured strip cannot be rebound.
 
 ```toml
 [[buttons]]
@@ -153,10 +153,10 @@ channel = 1
 
 | Action | Effect | LED `active` |
 |---|---|---|
-| `mute_ch`, `solo_ch` | Same as the strip's M / S for `channel` | muted / default device |
+| `mute_ch`, `select_ch` | Same as the strip's M / SELECT for `channel` | muted / default device |
 | `mic_mute` | Mute all inputs, or unmute all if all are muted (monitor sources excluded) | all inputs muted |
 | `ptt` | Unmute all inputs while held, mute them on release | held |
-| `out_cycle` | Next sink among the configured output strips as default, moving streams like S | - |
+| `out_cycle` | Next sink among the configured output strips as default, moving streams like SELECT | - |
 | `play_pause`, `play`, `pause`, `next`, `previous` | MPRIS on the configured player | - |
 
 `led = "on"` lights the LED whenever control is active. Buttons without an LED (Bank,

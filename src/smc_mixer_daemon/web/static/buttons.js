@@ -3,9 +3,9 @@ import { el } from "./dom.js";
 const CH = [1, 2, 3, 4, 5, 6, 7, 8];
 export const ROWS = [
   ["M", "MUTE"],
-  ["S", "SOLO"],
   ["R", "REC"],
   ["SEL", "SELECT"],
+  ["S", "SOLO"],
 ];
 export const TRANSPORT = [
   ["BANK_LEFT", "Bank <"],
@@ -24,7 +24,7 @@ export const TRANSPORT = [
 export const ACTIONS = [
   { id: "none", label: "Nicht belegt", hint: "Taste wird ignoriert" },
   { id: "mute_ch", label: "Kanal stumm", hint: "Ziel eines Kanals", channel: true, state: true },
-  { id: "solo_ch", label: "Kanal Standard", hint: "Gerät als Standard", channel: true, state: true },
+  { id: "select_ch", label: "Kanal wählen", hint: "Gerät als Standard", channel: true, state: true },
   { id: "mic_mute", label: "Mikro stumm", hint: "alle Eingänge", state: true },
   { id: "ptt", label: "Push-to-Talk", hint: "Mikro nur beim Halten", state: true },
   { id: "out_cycle", label: "Ausgang wechseln", hint: "Ausgangs-Kanäle rotieren" },
@@ -39,8 +39,8 @@ const LABEL = Object.fromEntries(ACTIONS.map((a) => [a.id, a.label]));
 export const hasLed = (name) => /^(REC|SOLO|MUTE|SELECT)_/.test(name) || ["REWIND", "FAST_FORWARD", "STOP", "PLAY", "RECORD"].includes(name);
 
 const stripOf = (name) => {
-  const match = /^(MUTE|SOLO)_(\d)$/.exec(name);
-  return match ? { channel: Number(match[2]), action: match[1] === "MUTE" ? "mute_ch" : "solo_ch" } : null;
+  const match = /^(MUTE|SELECT)_(\d)$/.exec(name);
+  return match ? { channel: Number(match[2]), action: match[1] === "MUTE" ? "mute_ch" : "select_ch" } : null;
 };
 
 /** Channel whose strip owns this button, when that strip is assigned in the draft. */

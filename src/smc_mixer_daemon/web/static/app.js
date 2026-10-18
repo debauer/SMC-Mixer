@@ -92,7 +92,7 @@ const edit = (fn) => {
   renderAll();
 };
 
-const stripButtons = (channel) => [`MUTE_${channel}`, `SOLO_${channel}`];
+const stripButtons = (channel) => [`MUTE_${channel}`, `SELECT_${channel}`];
 
 const handlers = {
   strip: (channel, fn) => edit((draft) => fn(draft.strips[channel - 1])),
@@ -111,7 +111,7 @@ const handlers = {
       const next = { action: "none", channel: null, led: "off", ...draft.buttons[name], ...patch };
       if (next.action === "none" && !["PLAY", "STOP"].includes(name)) return void delete draft.buttons[name];
       if (next.action === "none" || !hasLed(name)) next.led = "off";
-      if (next.led === "active" && !["mute_ch", "solo_ch", "mic_mute", "ptt"].includes(next.action)) next.led = "off";
+      if (next.led === "active" && !["mute_ch", "select_ch", "mic_mute", "ptt"].includes(next.action)) next.led = "off";
       draft.buttons[name] = next;
     }),
   global: (fn) => edit(fn),

@@ -30,7 +30,7 @@ def tap(controller: Controller, button: Button) -> None:
 
 def test_defaults_are_unchanged_and_none_disables_a_default() -> None:
     bindings = effective((), {1})
-    assert {b.action for b in bindings.values()} == {"mute_ch", "solo_ch", "play", "pause"}
+    assert {b.action for b in bindings.values()} == {"mute_ch", "select_ch", "play", "pause"}
     assert Button.PLAY not in effective((Binding(Button.PLAY, "none"),), {1})
 
 
@@ -81,12 +81,12 @@ def test_media_actions_and_always_on_led() -> None:
 
 def test_channel_actions_on_free_buttons() -> None:
     controller, audio = started(
-        Binding(Button.REC_3, "mute_ch", 1, "active"), Binding(Button.SELECT_3, "solo_ch", 2, "active")
+        Binding(Button.REC_3, "mute_ch", 1, "active"), Binding(Button.SOLO_3, "select_ch", 2, "active")
     )
     tap(controller, Button.REC_3)
-    tap(controller, Button.SELECT_3)
+    tap(controller, Button.SOLO_3)
     assert audio.calls == [("mute", "speakers"), ("select", "headset")]
-    assert controller.leds[Button.REC_3] and controller.leds[Button.SELECT_3]
+    assert controller.leds[Button.REC_3] and controller.leds[Button.SOLO_3]
 
 
 def test_unbound_and_suspended_buttons_do_nothing() -> None:
@@ -126,7 +126,7 @@ def test_buttons_round_trip_and_free_channel_buttons_are_bindable() -> None:
         **BASE,
         "buttons": [
             {"button": "MUTE_2", "action": "mic_mute", "channel": None, "led": "active"},
-            {"button": "REC_1", "action": "solo_ch", "channel": 1, "led": "off"},
+            {"button": "REC_1", "action": "select_ch", "channel": 1, "led": "off"},
         ],
     }
     config = config_store.from_json(data, Config(()))
