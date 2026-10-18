@@ -23,7 +23,10 @@ def render(config: Config) -> str:
         lines += ["[web]", f"enabled = {enabled}", f"host = {quote(web.host)}", f"port = {web.port}", ""]
     for strip in sorted(config.strips, key=lambda row: row.channel):
         lines += ["[[strips]]", f"channel = {strip.channel}", f"kind = {quote(strip.kind)}"]
-        lines += [f"name = {quote(strip.name)}", ""]
+        lines.append(f"name = {quote(strip.name)}")
+        if strip.label:
+            lines.append(f"label = {quote(strip.label)}")
+        lines.append("")
     for binding in sorted(config.buttons, key=lambda row: row.button):
         lines += ["[[buttons]]", f"button = {quote(binding.button.name)}", f"action = {quote(binding.action)}"]
         if binding.channel is not None:

@@ -25,7 +25,9 @@ cp contrib/config.example.toml ~/.config/smc-mixer-daemon/config.toml
 ```
 
 Edit the copied file. Assign up to eight strips using the displayed **device
-names**, not numeric IDs. `sink` means output, `source` means input. Omitted
+names**, not numeric IDs. An optional `label = "Desk speakers"` (at most 40
+characters) gives a strip a display name in the web interface; it never affects
+device matching. `sink` means output, `source` means input. Omitted
 channels are inactive; missing devices are never replaced with another device.
 Monitor sources are hidden from `devices` but can be assigned explicitly.
 

@@ -83,7 +83,13 @@ def describe(mixer: SmcMixer | None, controller: Controller | None, config: Conf
         control = "active" if controller and controller.ready else "suspended"
     strips = []
     for strip in sorted(config.strips, key=lambda row: row.channel):
-        row: dict[str, Any] = {"channel": strip.channel, "kind": strip.kind, "name": strip.name, "available": False}
+        row: dict[str, Any] = {
+            "channel": strip.channel,
+            "kind": strip.kind,
+            "name": strip.name,
+            "label": strip.label,
+            "available": False,
+        }
         snapshot = controller.snapshot if controller and controller.ready else None
         device = snapshot.devices.get((strip.kind, strip.name)) if snapshot else None
         if snapshot and device:

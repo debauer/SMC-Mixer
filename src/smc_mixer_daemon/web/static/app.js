@@ -25,7 +25,7 @@ const fromConfig = (config) => ({
   player: config.player,
   strips: Array.from({ length: 8 }, (_, i) => {
     const row = config.strips.find((strip) => strip.channel === i + 1);
-    return row ? { kind: row.kind, name: row.name } : null;
+    return row ? { kind: row.kind, name: row.name, label: row.label || "" } : null;
   }),
   buttons: Object.fromEntries(config.buttons.map((b) => [b.button, { action: b.action, channel: b.channel, led: b.led }])),
 });
@@ -33,7 +33,7 @@ const fromConfig = (config) => ({
 const payload = (draft) => ({
   soft_takeover: draft.soft_takeover,
   player: draft.player,
-  strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name }] : [])),
+  strips: draft.strips.flatMap((slot, i) => (slot && slot.name ? [{ channel: i + 1, kind: slot.kind, name: slot.name, label: slot.label.trim() || null }] : [])),
   buttons: Object.entries(draft.buttons)
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([button, b]) => ({ button, action: b.action, channel: b.channel, led: b.led })),
@@ -99,13 +99,21 @@ const handlers = {
   kind: (channel, kind) =>
     edit((draft) => {
       const slot = draft.strips[channel - 1];
-      draft.strips[channel - 1] = kind ? { kind, name: slot && slot.kind === kind ? slot.name : "" } : null;
+      draft.strips[channel - 1] = kind ? { kind, name: slot && slot.kind === kind ? slot.name : "", label: slot && slot.kind === kind ? slot.label : "" } : null;
       // Bindings on a strip's own M/S keys conflict while it is assigned; actions on a freed channel dangle.
       if (draft.strips[channel - 1] && draft.strips[channel - 1].name) for (const key of stripButtons(channel)) delete draft.buttons[key];
       if (!draft.strips[channel - 1] || !draft.strips[channel - 1].name) {
         for (const [key, b] of Object.entries(draft.buttons)) if (b.channel === channel) delete draft.buttons[key];
       }
     }),
+  label: (channel, text) => {
+    // Live typing must not rebuild the editor (it would drop focus), so update only the draft and the cards.
+    const slot = model.draft.strips[channel - 1];
+    slot.label = text;
+    renderLive();
+    const device = model.devices.devices.find((row) => row.kind === slot.kind && row.name === slot.name);
+    document.querySelector(".editor .title").textContent = text.trim() || (device ? device.description : slot.name);
+  },
   binding: (name, patch) =>
     edit((draft) => {
       const next = { action: "none", channel: null, led: "off", ...draft.buttons[name], ...patch };

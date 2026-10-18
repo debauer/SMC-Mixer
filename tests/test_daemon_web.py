@@ -94,7 +94,12 @@ def test_save_is_atomic_and_leaves_no_temporary_files(tmp_path: Path) -> None:
 def test_status_config_devices_and_static_files(web: tuple[int, Board, Path]) -> None:
     port, board, _ = web
     assert call(port, "GET", "/api/status")[1]["mixer"]["control"] == "waiting"
-    assert call(port, "GET", "/api/config")[1]["strips"][0] == {"channel": 1, "kind": "sink", "name": "speakers"}
+    assert call(port, "GET", "/api/config")[1]["strips"][0] == {
+        "channel": 1,
+        "kind": "sink",
+        "name": "speakers",
+        "label": None,
+    }
     devices = call(port, "GET", "/api/devices")[1]
     assert {"kind": "sink", "name": "speakers", "description": "Speakers", "default": True} in devices["devices"]
     assert devices["players"] == ["firefox.instance1"]
@@ -156,7 +161,7 @@ def test_describe_publishes_strip_state_without_hardware_access() -> None:
     speakers, missing, mic = status["strips"]
     assert speakers | {"description": "Speakers"} == speakers
     assert (speakers["volume"], speakers["muted"], speakers["default"]) == (100, False, True)
-    assert missing == {"channel": 2, "kind": "sink", "name": "missing", "available": False}
+    assert missing == {"channel": 2, "kind": "sink", "name": "missing", "label": None, "available": False}
     assert (mic["volume"], mic["default"], mic["owned"]) == (0, True, True)
     mixer.close()
 
@@ -248,3 +253,18 @@ def test_loop_records_every_physical_press_even_when_unbound(monkeypatch: pytest
 
     runtime.control_loop(Config((Strip(1, "sink", "speakers"),)), Stop(), Subscription(), board)
     assert board.status()["keys"] == {"held": ["BANK_LEFT"], "last": "BANK_LEFT", "presses": 1}
+
+
+def test_strip_labels_round_trip_validate_and_publish() -> None:
+    config = Config((Strip(1, "sink", "speakers", 'Boxen "links"'), Strip(2, "sink", "headset")))
+    again = parse(tomllib.loads(config_store.render(config)))
+    assert again.strips == (Strip(1, "sink", "speakers", 'Boxen "links"'), Strip(2, "sink", "headset", None))
+    assert Api.config_json(again)["strips"][0]["label"] == 'Boxen "links"'
+    assert describe(None, None, again)["strips"][0]["label"] == 'Boxen "links"'
+    base = {"strips": [{"channel": 1, "kind": "sink", "name": "x", "label": ""}]}
+    base["strips"][0]["label"] = None  # type: ignore[assignment]
+    assert config_store.from_json(base, Config(())).strips[0].label is None
+    for label in ("", " padded ", "x" * 41, 5):
+        base["strips"][0]["label"] = label  # type: ignore[assignment]
+        with pytest.raises(ConfigError):
+            config_store.from_json(base, Config(()))

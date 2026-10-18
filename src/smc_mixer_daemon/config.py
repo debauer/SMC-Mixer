@@ -8,6 +8,8 @@ from typing import Any
 
 from smc_mixer_daemon.buttons import Binding, BindingError, parse_binding, strip_buttons
 
+MAX_LABEL = 40
+
 
 class ConfigError(ValueError):
     """Invalid daemon configuration."""
@@ -18,6 +20,7 @@ class Strip:
     channel: int
     kind: str
     name: str
+    label: str | None = None
 
 
 @dataclass(frozen=True)
@@ -94,14 +97,19 @@ def parse(raw: dict[str, Any]) -> Config:
         raise ConfigError("strips: expected [[strips]] tables")
     strips: list[Strip] = []
     for index, entry in enumerate(entries):
-        row = table(entry, {"channel", "kind", "name"}, f"strips[{index}]")
+        row = table(entry, {"channel", "kind", "name", "label"}, f"strips[{index}]")
         channel = row.get("channel")
         if type(channel) is not int or not 1 <= channel <= 8:
             raise ConfigError(f"strips[{index}].channel: expected an integer from 1 to 8")
         kind = row.get("kind")
         if kind not in ("sink", "source"):
             raise ConfigError(f"strips[{index}].kind: expected sink or source")
-        strips.append(Strip(channel, kind, name(row.get("name"), f"strips[{index}].name")))
+        label = None
+        if row.get("label") is not None:
+            label = name(row["label"], f"strips[{index}].label")
+            if len(label) > MAX_LABEL:
+                raise ConfigError(f"strips[{index}].label: at most {MAX_LABEL} characters")
+        strips.append(Strip(channel, kind, name(row.get("name"), f"strips[{index}].name"), label))
     if len({strip.channel for strip in strips}) != len(strips):
         raise ConfigError("strips: duplicate channel")
     if len({(strip.kind, strip.name) for strip in strips}) != len(strips):

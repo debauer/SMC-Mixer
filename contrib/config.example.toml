@@ -18,6 +18,7 @@ player = "firefox"
 channel = 1
 kind = "sink"
 name = "REPLACE_WITH_SPEAKER_SINK_NAME"
+# label = "Speakers"   # optional display name for the web interface
 
 [[strips]]
 channel = 2

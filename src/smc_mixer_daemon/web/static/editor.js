@@ -69,7 +69,7 @@ export function renderEditor(container, model, handlers) {
   const slot = draft.strips[selected - 1];
   const kind = slot ? KIND[slot.kind] : null;
   const device = slot && devices.devices.find((row) => row.kind === slot.kind && row.name === slot.name);
-  const title = slot && slot.name ? (device ? device.description : slot.name) : "Frei";
+  const title = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Frei";
   const change = (fn) => handlers.strip(selected, fn);
   const parts = [
     el("div", { class: "editor-head" }, el("h2", { class: `label ${kind ? kind.cls : ""}` }, `KANAL ${pad(selected)}`), el("div", { class: "title" }, title)),
@@ -83,6 +83,21 @@ export function renderEditor(container, model, handlers) {
     ),
   ];
   if (slot) {
+    parts.push(
+      el(
+        "label",
+        { class: "field", for: "label" },
+        el("span", { class: "label" }, "BEZEICHNUNG"),
+        el("input", {
+          id: "label",
+          type: "text",
+          maxlength: "40",
+          value: slot.label,
+          placeholder: device ? device.description : "automatisch aus Ziel",
+          oninput: (event) => handlers.label(selected, event.target.value),
+        }),
+      ),
+    );
     parts.push(el("div", { class: "group" }, el("h3", { class: "label" }, "ZIEL"), targets(model, slot, change)));
   }
   parts.push(general(model, handlers.global));

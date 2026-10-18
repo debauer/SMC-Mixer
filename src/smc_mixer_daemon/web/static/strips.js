@@ -50,7 +50,7 @@ export function createStrips(container, onSelect) {
       parts.fill.style.height = `${kind ? Math.min(100, level) : 0}%`;
       parts.cap.style.bottom = `calc(${raw == null ? level : percent(raw)}% - 8px)`;
       parts.value.textContent = kind && device ? `${device.volume}%` : raw == null ? "-" : `${percent(raw)}%`;
-      parts.name.textContent = slot && slot.name ? (device ? device.description : slot.name) : "Frei";
+      parts.name.textContent = slot && slot.name ? slot.label.trim() || (device ? device.description : slot.name) : "Frei";
       parts.kind.textContent = kind ? (device && device.owned === false ? "FADER ANGLEICHEN" : kind.label) : "FREI";
       parts.mute.classList.toggle("on", Boolean(device && device.muted));
       parts.solo.classList.toggle("on", Boolean(device && device.default));
