@@ -1,12 +1,19 @@
 # smc-mixer
 
-Control the M-Vave / Sinco SMC-Mixer over USB-MIDI from Python, or observe it
-with the read-only terminal monitor.
+Control the M-Vave / Sinco SMC-Mixer over USB-MIDI. Use the **Linux daemon** to
+turn it into a desktop audio mixer with a web interface, program it from Python,
+or observe it with the read-only terminal monitor.
 
-- Read buttons, faders and relative DAW or absolute USER knob movements.
-- Read the device mode, fader positions and USER knob values before moving controls.
-- Control button LEDs and knob LED blinking.
-- Track state and reconnect automatically.
+![The daemon's web interface: encoders, eight channel columns with their keys and faders, transport and navigation keys, device list and daemon log](docs/images/daemon-web.jpg)
+
+- **Daemon and web interface:** faders set PipeWire/PulseAudio volumes, M mutes, SELECT
+  picks the default output or input, and play/pause drive an MPRIS player. Every button
+  and knob can be bound to an action or shell command in the browser. Start it with
+  `uv run smc-mixer-daemon run` and open <http://127.0.0.1:8765/>
+  ([daemon guide](docs/daemon.md)).
+- **Python library:** read buttons, faders and relative DAW or absolute USER knob movements,
+  read the device mode and fader positions, control button LEDs and knob blinking, and
+  reconnect automatically.
 
 ## Compatibility
 
@@ -72,13 +79,6 @@ and 33 rows**. Press **q** or **Ctrl+C** to quit.
 
 See the [tools guide](docs/tools.md#live-monitor) for display conventions and
 the other installed commands.
-
-## Linux daemon web interface
-
-`smc-mixer-daemon run` serves a local page to assign devices, bind buttons and knobs
-and watch the mixer live. See the [daemon guide](docs/daemon.md#web-interface).
-
-![The daemon's web interface: encoders, eight channel columns with their keys and faders, transport and navigation keys, device list and daemon log](docs/images/daemon-web.jpg)
 
 ## Packages and documentation
 
